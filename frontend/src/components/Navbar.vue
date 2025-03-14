@@ -113,6 +113,8 @@ const handleLogout = async () => {
   try {
     await auth.logout()
     isMenuOpen.value = false
+    // Redirect to login page after logout
+    window.location.href = '/login'
   } catch (error) {
     console.error("Logout error:", error)
   }

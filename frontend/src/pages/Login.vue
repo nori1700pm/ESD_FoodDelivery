@@ -77,12 +77,21 @@ const handleSubmit = async () => {
     error.value = null
     
     await auth.login(email.value, password.value)
-    router.push('/')
+    router.push('/restaurants') // Redirect to restaurants list page
   } catch (err) {
     console.error('Login failed:', err)
     error.value = 'Invalid email or password'
   } finally {
     loading.value = false
+  }
+}
+
+const handleLogout = async () => {
+  try {
+    await auth.logout()
+    router.push('/login') // Redirect to login page after logout
+  } catch (err) {
+    console.error('Logout failed:', err)
   }
 }
 </script>

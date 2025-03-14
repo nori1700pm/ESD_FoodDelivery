@@ -17,8 +17,7 @@ import NotFound from '../pages/NotFound.vue'
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    redirect: '/login'
   },
   {
     path: '/login',
@@ -33,7 +32,8 @@ const routes = [
   {
     path: '/restaurants',
     name: 'RestaurantList',
-    component: RestaurantList
+    component: RestaurantList,
+    meta: { requiresAuth: true }
   },
   {
     path: '/restaurants/:id',
@@ -87,6 +87,10 @@ router.beforeEach((to, from, next) => {
   
   if (to.meta.requiresAuth && !auth.user && !auth.loading) {
     next('/login')
+  } else if (to.path === '/logout') {
+    auth.logout().then(() => {
+      next('/login')
+    })
   } else {
     next()
   }

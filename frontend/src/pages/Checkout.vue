@@ -194,9 +194,11 @@ const handleSubmit = async () => {
       let paymentSuccess = true
       
       if (paymentMethod.value === 'wallet') {
+        const tempOrderId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
+
         // Process the payment
         console.log('Processing wallet payment for amount:', totalWithDelivery.value)
-        paymentSuccess = await wallet.processPayment(totalWithDelivery.value)
+        paymentSuccess = await wallet.processPayment(totalWithDelivery.value, tempOrderId)
         
         if (!paymentSuccess) {
           throw new Error('Payment processing failed. Please check your wallet balance.')

@@ -1,16 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useAuthStore } from './auth'
-import { doc, getDoc, updateDoc, setDoc, onSnapshot, serverTimestamp, collection, addDoc } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import axios from 'axios'
+
+const API_URL = 'http://localhost:3000' // or your deployed backend URL
 
 export const useWalletStore = defineStore('wallet', () => {
   const balance = ref(0)
   const loading = ref(true)
   const error = ref(null)
   const auth = useAuthStore()
-
-  let unsubscribe = null
 
   const initWallet = async () => {
     if (!auth.user) {
@@ -20,27 +19,15 @@ export const useWalletStore = defineStore('wallet', () => {
     }
 
     try {
-      const walletRef = doc(db, 'wallets', auth.user.uid)
-      const walletDoc = await getDoc(walletRef)
-
-      if (!walletDoc.exists()) {
-        await setDoc(walletRef, {
-          balance: 0,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        })
-      }
-
-      unsubscribe = onSnapshot(walletRef, (snapshot) => {
-        if (snapshot.exists()) {
-          balance.value = snapshot.data().balance || 0
-          loading.value = false
-          error.value = null
-        }
-      })
+      loading.value = true
+      const response = await axios.get(`${API_URL}/wallet/${auth.user.uid}`)
+      balance.value = response.data.balance || 0
+      error.value = null
     } catch (err) {
       console.error("Error initializing wallet:", err)
       error.value = "Failed to initialize wallet"
+      balance.value = 0
+    } finally {
       loading.value = false
     }
   }
@@ -53,33 +40,11 @@ export const useWalletStore = defineStore('wallet', () => {
 
     try {
       error.value = null
-      
-      const walletRef = doc(db, 'wallets', auth.user.uid)
-      const walletDoc = await getDoc(walletRef)
-      
-      if (!walletDoc.exists()) {
-        await setDoc(walletRef, {
-          balance: amount,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        })
-      } else {
-        const currentBalance = walletDoc.data().balance || 0
-        await updateDoc(walletRef, {
-          balance: currentBalance + amount,
-          updatedAt: serverTimestamp()
-        })
-      }
-
-      // Record the transaction in transaction history
-      await addDoc(collection(db, 'transactions'), {
-        userId: auth.user.uid,
-        amount: amount,
-        type: 'DEPOSIT',
-        timestamp: serverTimestamp(),
-        status: 'COMPLETED'
+      const response = await axios.put(`${API_URL}/wallet/${auth.user.uid}`, {
+        balance: balance.value + amount
       })
-
+      
+      balance.value = response.data.balance || balance.value
       return true
     } catch (err) {
       console.error("Error adding money:", err)
@@ -88,7 +53,7 @@ export const useWalletStore = defineStore('wallet', () => {
     }
   }
 
-  const processPayment = async (amount) => {
+  const processPayment = async (amount, orderId) => {
     if (!auth.user) {
       error.value = "User not authenticated"
       return false
@@ -101,40 +66,16 @@ export const useWalletStore = defineStore('wallet', () => {
 
     try {
       error.value = null
-      
-      const walletRef = doc(db, 'wallets', auth.user.uid)
-      const walletDoc = await getDoc(walletRef)
-      
-      if (!walletDoc.exists()) {
-        error.value = "Wallet not found"
-        return false
-      }
-      
-      const currentBalance = walletDoc.data().balance || 0
-      
-      if (currentBalance < amount) {
-        error.value = "Insufficient balance"
-        return false
-      }
-      
-      await updateDoc(walletRef, {
-        balance: currentBalance - amount,
-        updatedAt: serverTimestamp()
+      const response = await axios.post(`${API_URL}/wallet/${auth.user.uid}/process-payment`, {
+        amount: amount,
+        orderId: orderId
       })
       
-      // Record the transaction
-      await addDoc(collection(db, 'transactions'), {
-        userId: auth.user.uid,
-        amount: -amount,
-        type: 'PAYMENT',
-        timestamp: serverTimestamp(),
-        status: 'COMPLETED'
-      })
-      
+      balance.value = response.data.newBalance
       return true
     } catch (err) {
       console.error("Error processing payment:", err)
-      error.value = "Failed to process payment"
+      error.value = err.response?.data?.error || "Failed to process payment"
       return false
     }
   }

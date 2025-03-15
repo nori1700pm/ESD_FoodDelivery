@@ -105,6 +105,7 @@ import VueFeather from 'vue-feather'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../config/firebase'
 import { storeToRefs } from 'pinia'
+import { watch } from 'vue'
 
 const wallet = useWalletStore()
 const auth = useAuthStore()
@@ -116,12 +117,6 @@ const isAdding = ref(false)
 const error = ref('')
 const success = ref('')
 const directBalance = ref(null)
-
-// Initialize wallet
-onMounted(() => {
-  wallet.initWallet()
-  checkWallet()
-})
 
 // For debugging - fetch wallet directly
 const checkWallet = async () => {
@@ -143,6 +138,22 @@ const checkWallet = async () => {
   }
 }
 
+watch(() => user.value, (newUser) => {
+  if (newUser) {
+    wallet.initWallet()
+    checkWallet()
+  } else {
+    balance.value = 0
+    directBalance.value = 0
+  }
+}, { immediate: true })
+
+// Initialize wallet
+onMounted(() => {
+  wallet.initWallet()
+  checkWallet()
+})
+
 const handleAddMoney = async () => {
   if (!amount.value || isNaN(Number(amount.value)) || Number(amount.value) <= 0) {
     error.value = 'Please enter a valid amount'
@@ -160,17 +171,7 @@ const handleAddMoney = async () => {
     if (result) {
       success.value = `Successfully added $${amountNumber.toFixed(2)} to your wallet`
       amount.value = ''
-      
-      // Check wallet again
-      if (user.value) {
-        const walletRef = doc(db, 'wallets', user.value.uid)
-        const walletDoc = await getDoc(walletRef)
-        if (walletDoc.exists()) {
-          directBalance.value = walletDoc.data().balance || 0
-        }
-      }
-      
-      setTimeout(() => success.value = '', 3000)
+      await wallet.initWallet() // Refresh the balance
     } else {
       error.value = 'Failed to add money to your wallet'
     }

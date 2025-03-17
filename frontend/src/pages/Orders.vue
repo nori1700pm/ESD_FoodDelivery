@@ -1,4 +1,6 @@
 <template>
+
+  <!-- loading animation while fetching orders ; error if fetchOrders failed -->
   <div v-if="loading" class="flex justify-center items-center h-64">
     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
   </div>
@@ -13,11 +15,13 @@
     </button>
   </div>
 
+  <!-- If all goes well, load all user's orders -->
   <div v-else class="max-w-4xl mx-auto">
     <h1 class="text-3xl font-bold mb-6 flex items-center">
       <vue-feather type="package" size="28" class="mr-2" /> My Orders
     </h1>
     
+    <!-- if user has no order history  -->
     <div v-if="orders.length === 0" class="text-center py-16 bg-white rounded-lg shadow-lg">
       <vue-feather type="package" size="64" class="mx-auto text-gray-400 mb-4" />
       <h2 class="text-2xl font-bold mb-2">No orders yet</h2>
@@ -57,6 +61,15 @@
             <span class="font-bold">Total</span>
             <span class="font-bold">${{ order.price.toFixed(2) }}</span>
           </div>
+
+          <!-- show all order info -->
+          <div>
+              <div class="mb-4">
+              <b> temporarily show all user's orders - will add a filter later </b>
+              </div>
+              {{ order }}
+          </div>
+
         </div>
       </div>
     </div>
@@ -91,6 +104,7 @@ const fetchOrders = async () => {
     loading.value = true
     error.value = null
     
+    // Firestore must have an index to process both "where" and "orderBy" operations together efficiently
     const ordersQuery = query(
       collection(db, 'orders'),
       where('customerId', '==', user.value.uid),
@@ -107,13 +121,19 @@ const fetchOrders = async () => {
     orders.value = ordersSnapshot.docs.map(doc => {
       const data = doc.data()
       return {
-        id: doc.id,
-        restaurantName: data.restaurantName || 'Unknown Restaurant',
-        status: data.status || 'PENDING',
-        price: data.price || 0,
-        items: data.items || [],
+        orderID: doc.id,
         createdAt: data.createdAt,
-        deliveryAddress: data.deliveryAddress || ''
+        deliveryAddress: data.deliveryAddress || '',
+        items: data.items,
+        paymentMethod: data.paymentMethod,
+        paymentStatus: data.paymentStatus,
+        price: data.price || 0,
+        restaurantID: data.restaurantId,
+        restaurantName: data.restaurantName || 'Unknown Restaurant',
+        serviceCallError: data.serviceCallError, 
+        status: data.status || 'PENDING',
+        items: data.items || [],
+        updatedAt: data.updatedAt
       }
     })
   } catch (err) {

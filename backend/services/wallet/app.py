@@ -5,10 +5,11 @@ from firebase_admin import credentials, firestore, initialize_app
 import pika
 import uuid
 from flask_cors import CORS
-
+import traceback  
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 # Initialize Firebase
 firebase_config = os.environ.get('FIREBASE_CONFIG')
 firebase_config_dict = json.loads(firebase_config)
@@ -162,6 +163,45 @@ def update_wallet(customer_id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/users/<user_id>', methods=['GET'])
+def get_user_profile(user_id):
+    try:
+        print(f"Fetching profile for user ID: {user_id}")
+        
+        # Get user document from Firestore
+        user_ref = db.collection('users').document(user_id)
+        user = user_ref.get()
+        
+        print(f"Firebase response - Document exists: {user.exists}")
+        
+        if not user.exists:
+            error_response = {
+                'error': 'User not found',
+                'user_id': user_id
+            }
+            print(f"User not found response: {error_response}")
+            return jsonify(error_response), 404
+            
+        user_data = user.to_dict()
+        print(f"Raw user data from Firebase: {user_data}")
+        
+        # Construct response with default values
+        response_data = {
+            'uid': user_id,
+            'address': user_data.get('address', ''),
+            'name': user_data.get('name', ''),
+            'email': user_data.get('email', '')
+        }
+        
+        print(f"Sending response: {response_data}")
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        error_msg = f"Error fetching user profile: {str(e)}"
+        print(error_msg)
+        print(f"Stack trace: {traceback.format_exc()}")
+        return jsonify({'error': error_msg}), 500
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000)

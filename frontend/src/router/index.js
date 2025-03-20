@@ -17,7 +17,10 @@ import NotFound from '../pages/NotFound.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    redirect: (to) => {
+      const auth = useAuthStore()
+      return auth.user ? '/restaurants' : '/login'
+    }
   },
   {
     path: '/login',
@@ -94,6 +97,8 @@ router.beforeEach((to, from, next) => {
   } else {
     next()
   }
-})
+},
+)
+
 
 export default router

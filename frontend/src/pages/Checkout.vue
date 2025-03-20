@@ -103,60 +103,88 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watchEffect } from 'vue'
+import { ref, computed, onMounted, watchEffect, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../stores/cart'
-import { useWalletStore } from '../stores/wallet'
 import { useAuthStore } from '../stores/auth'
 import { storeToRefs } from 'pinia'
 import VueFeather from 'vue-feather'
-import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import { useCartStore } from '../stores/cart'
+import axios from 'axios'
 
 const router = useRouter()
-const cart = useCartStore()
-const wallet = useWalletStore()
 const auth = useAuthStore()
+const cart = useCartStore()
 
-// Initialize stores
-onMounted(() => {
-  cart.initCart()
-  wallet.initWallet()
-})
-
-const { items, total } = storeToRefs(cart)
-const { balance } = storeToRefs(wallet)
 const { user } = storeToRefs(auth)
+const { items } = storeToRefs(cart)
 
 const address = ref('')
 const paymentMethod = ref('wallet')
 const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
-const userProfile = ref(null)
 const deliveryFee = ref(2.99)
+const balance = ref(0)
+
+const total = computed(() => 
+  items.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+)
 const totalWithDelivery = computed(() => total.value + deliveryFee.value)
 
-watchEffect(() => {
-  if (items.value.length === 0 && !success.value) {
-    router.push('/cart')
-  }
-})
+// Configure API endpoint for pay-for-delivery service
+const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5003'
 
-// Fetch user profile
-onMounted(async () => {
-  if (!user.value) return
-  
+const getProfileAndBalance = async () => {
+  if (!user.value) {
+    console.log('No user found, skipping profile and balance fetch')
+    return
+  }
+
   try {
-    const userDoc = await getDoc(doc(db, 'users', user.value.uid))
+    console.log(`Fetching user profile and balance for user ID: ${user.value.uid}`)
+    const response = await fetch(`${PAY_DELIVERY_SERVICE_URL}/user-profile/${user.value.uid}`)
+    const result = await response.json()
+    console.log('Raw profile response:', result)
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to fetch user profile')
+    }
     
-    if (userDoc.exists()) {
-      userProfile.value = userDoc.data()
-      address.value = userDoc.data().address || ''
+    if (result.code === 200 && result.data) {
+      console.log('Profile data received:', result.data)
+      // Set address if available
+      if (result.data.address) {
+        console.log('Setting address:', result.data.address)
+        address.value = result.data.address
+      }
+      // Set balance if available
+      if (result.data.balance !== undefined) {
+        console.log('Setting balance:', result.data.balance)
+        balance.value = result.data.balance
+      }
+    } else {
+      console.warn('Invalid profile data format:', result)
+      throw new Error('Invalid profile data format')
     }
   } catch (err) {
-    console.error('Error fetching user profile:', err)
+    console.error('Error fetching user data:', err)
+    error.value = `Unable to load user data: ${err.message}`
   }
+}
+
+// Single watcher for user changes
+watch(user, async (newUser) => {
+  if (newUser) {
+    await getProfileAndBalance()
+  } else {
+    balance.value = 0
+    address.value = ''
+  }
+}, { immediate: true })
+
+onMounted(() => {
+  console.log('Component mounted')
+  cart.initCart() 
 })
 
 const handleSubmit = async () => {
@@ -165,132 +193,48 @@ const handleSubmit = async () => {
     return
   }
   
-  if (items.value.length === 0) {
-    error.value = 'Your cart is empty'
-    return
-  }
-  
-  if (paymentMethod.value === 'wallet' && balance.value < totalWithDelivery.value) {
-    error.value = 'Insufficient balance in your wallet'
+  if (!user.value) {
+    error.value = 'User not authenticated'
     return
   }
   
   try {
     loading.value = true
     error.value = null
+    console.log('=== Starting Checkout Process ===')
     
-    // First, get restaurant info
-    if (items.value.length > 0 && user.value) {
-      const restaurantId = items.value[0].restaurantId
-      const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId))
-      
-      if (!restaurantDoc.exists()) {
-        throw new Error('Restaurant not found')
-      }
-      
-      const restaurantData = restaurantDoc.data()
-      
-      // Process payment if using wallet
-      let paymentSuccess = true
-      
-      if (paymentMethod.value === 'wallet') {
-        const tempOrderId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9)
-
-        // Process the payment
-        console.log('Processing wallet payment for amount:', totalWithDelivery.value)
-        paymentSuccess = await wallet.processPayment(totalWithDelivery.value, tempOrderId)
-        
-        if (!paymentSuccess) {
-          throw new Error('Payment processing failed. Please check your wallet balance.')
-        }
-        console.log('Wallet payment successful')
-      }
-      
-      // Create order in Firestore with customerId included
-      console.log('Creating order in Firestore')
-      const orderData = {
-        customerId: user.value.uid,
-        items: items.value,
-        restaurantId: restaurantId,
-        restaurantName: restaurantData.name,
-        deliveryAddress: address.value,
-        price: totalWithDelivery.value,
-        status: 'PENDING',
-        paymentMethod: paymentMethod.value,
-        paymentStatus: paymentMethod.value === 'wallet' ? 'PAID' : 'PENDING',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }
-      
-      // Create the order in Firestore
-      const orderRef = await addDoc(collection(db, 'orders'), orderData)
-      const orderId = orderRef.id
-      console.log('Order created with ID:', orderId)
-      
-      // Call the delivery-food service to orchestrate the delivery
-      try {
-        const deliveryServiceUrl = import.meta.env.VITE_DELIVERY_SERVICE_URL || 'http://localhost:3000'
-        console.log('Calling delivery service at:', deliveryServiceUrl)
-        
-        const response = await fetch(`${deliveryServiceUrl}/place-order`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...orderData,
-            id: orderId,
-          }),
-        })
-        
-        let responseData
-        if (!response.ok) {
-          responseData = await response.json()
-          console.error('Delivery service error:', responseData)
-          
-          // Update order status to indicate an issue
-          await updateDoc(doc(db, 'orders', orderId), {
-            status: 'DELIVERY_SERVICE_ERROR',
-            serviceError: responseData.error || 'Unknown error',
-            updatedAt: serverTimestamp()
-          })
-        } else {
-          responseData = await response.json()
-          console.log('Delivery service response:', responseData)
-          
-          // Update order with driver information if assigned
-          if (responseData.status === 'ASSIGNED' && responseData.driver) {
-            await updateDoc(doc(db, 'orders', orderId), {
-              status: 'ASSIGNED',
-              driverId: responseData.driver.id,
-              driverName: responseData.driver.name,
-              updatedAt: serverTimestamp()
-            })
-          }
-        }
-      } catch (err) {
-        console.error('Error calling delivery service:', err)
-        
-        // Don't fail the checkout if the delivery service fails
-        // Just update the order status
-        await updateDoc(doc(db, 'orders', orderId), {
-          status: 'PENDING_DRIVER_ASSIGNMENT',
-          serviceCallError: true,
-          updatedAt: serverTimestamp()
-        })
-      }
-      
-      // Clear the cart
-      await cart.clearCart()
-      
-      // Show success message
-      success.value = true
-      
-      // Redirect to orders page after a delay
-      setTimeout(() => {
-        router.push('/orders')
-      }, 3000)
+    const tempOrderId = `order-${Date.now()}-${user.value.uid.slice(0, 8)}`
+    
+    const paymentResponse = await fetch(`${PAY_DELIVERY_SERVICE_URL}/pay-delivery`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        custId: user.value.uid,
+        orderId: tempOrderId,
+        amount: totalWithDelivery.value
+      })
+    })
+    
+    const paymentResult = await paymentResponse.json()
+    console.log('Payment result:', paymentResult)
+    
+    if (paymentResult.code !== 200) {
+      throw new Error(paymentResult.message || 'Payment processing failed')
     }
+
+    // Update balance from pay-for-delivery response
+    if (paymentResult.data?.wallet_result?.newBalance !== undefined) {
+      balance.value = paymentResult.data.wallet_result.newBalance
+    }
+    
+    await cart.clearCart()
+    success.value = true
+    setTimeout(() => {
+      router.push('/orders')
+    }, 3000)
+    
   } catch (err) {
     console.error('Checkout error:', err)
     error.value = err.message || 'An error occurred during checkout'

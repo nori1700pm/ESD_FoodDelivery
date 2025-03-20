@@ -2,7 +2,10 @@
   <nav class="bg-white shadow-lg">
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center h-16">
-        <router-link to="/" class="text-2xl font-bold text-blue-600">
+        <router-link 
+          :to="user ? '/restaurants' : '/'" 
+          class="text-2xl font-bold text-blue-600"
+        >
           FoodDelivery
         </router-link>
         

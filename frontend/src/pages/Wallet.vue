@@ -11,10 +11,7 @@
         <div class="animate-pulse h-10 w-32 bg-gray-200 rounded"></div>
       </template>
       <template v-else>
-        <h2 class="text-4xl font-bold text-blue-600">${{ balance.toFixed(2) }}</h2>
-        <p v-if="directBalance !== null && directBalance !== balance" class="text-sm text-gray-500 mt-1">
-          Direct check: ${{ directBalance.toFixed(2) }}
-        </p>
+        <h2 class="text-4xl font-bold text-blue-600">${{ (balance ?? 0).toFixed(2) }}</h2>
       </template>
     </div>
     
@@ -95,6 +92,19 @@
       User ID: {{ user.uid }}
     </div>
   </div>
+  <div v-if="lastTransaction" 
+       :class="[
+         'mt-4 p-4 rounded-lg',
+         lastTransaction.status === 'success' 
+           ? 'bg-green-100 text-green-700' 
+           : 'bg-red-100 text-red-700'
+       ]">
+    <h4 class="font-bold">Last Transaction</h4>
+    <p>Type: {{ lastTransaction.type === 'credit' ? 'Add Money' : 'Payment' }}</p>
+    <p>Amount: ${{ lastTransaction.amount.toFixed(2) }}</p>
+    <p>Status: {{ lastTransaction.status }}</p>
+    <p v-if="lastTransaction.error">Error: {{ lastTransaction.error }}</p>
+  </div>
 </template>
 
 <script setup>
@@ -102,8 +112,6 @@ import { ref, onMounted } from 'vue'
 import { useWalletStore } from '../stores/wallet'
 import { useAuthStore } from '../stores/auth'
 import VueFeather from 'vue-feather'
-import { doc, getDoc } from 'firebase/firestore'
-import { db } from '../config/firebase'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 
@@ -112,46 +120,24 @@ const auth = useAuthStore()
 const { user } = storeToRefs(auth)
 const { balance, loading } = storeToRefs(wallet)
 
+// Initialize balance with a default value
+balance.value = balance.value ?? 0
+
 const amount = ref('')
 const isAdding = ref(false)
 const error = ref('')
 const success = ref('')
-const directBalance = ref(null)
-
-// For debugging - fetch wallet directly
-const checkWallet = async () => {
-  if (!user.value) return
-  
-  try {
-    const walletRef = doc(db, 'wallets', user.value.uid)
-    const walletDoc = await getDoc(walletRef)
-    
-    if (walletDoc.exists()) {
-      directBalance.value = walletDoc.data().balance || 0
-      console.log("Direct wallet check:", walletDoc.data())
-    } else {
-      console.log("Wallet document doesn't exist")
-      directBalance.value = 0
-    }
-  } catch (err) {
-    console.error("Error checking wallet:", err)
-  }
-}
 
 watch(() => user.value, (newUser) => {
   if (newUser) {
     wallet.initWallet()
-    checkWallet()
   } else {
     balance.value = 0
-    directBalance.value = 0
   }
 }, { immediate: true })
 
-// Initialize wallet
 onMounted(() => {
   wallet.initWallet()
-  checkWallet()
 })
 
 const handleAddMoney = async () => {
@@ -180,6 +166,12 @@ const handleAddMoney = async () => {
     console.error(err)
   } finally {
     isAdding.value = false
+    // Clear success message after 5 seconds
+    if (success.value) {
+      setTimeout(() => {
+        success.value = ''
+      }, 5000)
+    }
   }
 }
 </script>

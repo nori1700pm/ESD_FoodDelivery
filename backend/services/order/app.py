@@ -1,12 +1,18 @@
-import os
-import json
-import firebase_admin
-from firebase_admin import credentials, firestore, initialize_app
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import json
+import os
+from firebase_admin import credentials, firestore, initialize_app
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, 
+     resources={r"/*": {
+         "origins": ["http://localhost:5173"],
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": ["Content-Type", "Authorization"],
+         "expose_headers": ["Content-Type"],
+         "supports_credentials": True
+     }})
 
 # Initialize Firebase
 firebase_config = os.environ.get('FIREBASE_CONFIG')
@@ -62,26 +68,39 @@ def create_order():
     """Create a new order"""
     try:
         order_data = request.json
+        print("Received order data:", order_data)  # Debug log
         
         # Validate required fields
-        required_fields = ['customerId', 'restaurantId', 'items', 'price', 'status']
-        for field in required_fields:
-            if field not in order_data:
-                return jsonify({'error': f"Missing required field: {field}"}), 400
+        required_fields = ['customerId', 'items', 'price', 'status', 'deliveryAddress']
+        missing_fields = [field for field in required_fields if field not in order_data]
+        if missing_fields:
+            print(f"Missing fields: {missing_fields}")  # Debug log
+            return jsonify({'error': f"Missing required fields: {', '.join(missing_fields)}"}), 400
         
-        # Add timestamps
-        order_data['createdAt'] = firestore.SERVER_TIMESTAMP
-        order_data['updatedAt'] = firestore.SERVER_TIMESTAMP
+        # Ensure restaurant info is present
+        if 'restaurantName' not in order_data or not order_data['restaurantName']:
+            print("Restaurant name missing or empty")  # Debug log
+            # Try to get restaurant name from first item
+            if order_data.get('items') and len(order_data['items']) > 0:
+                first_item = order_data['items'][0]
+                order_data['restaurantName'] = (
+                    first_item.get('restaurantName') or 
+                    first_item.get('restaurant', {}).get('name') or 
+                    'Unknown Restaurant'
+                )
+        
+        print("Final order data being saved:", order_data)  # Debug log
         
         # Save to Firestore
-        order_ref = db.collection('orders').document()
+        order_ref = db.collection('orders').document(order_data.get('orderId'))
         order_ref.set(order_data)
         
         # Return the created order with ID
-        return jsonify({'id': order_ref.id, **order_data}), 201
+        return jsonify(order_data), 201
     except Exception as e:
+        print(f"Error creating order: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
-
+    
 @app.route('/orders/<order_id>', methods=['PUT'])
 def update_order(order_id):
     """Update an existing order"""

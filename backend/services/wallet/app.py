@@ -110,10 +110,37 @@ def process_payment(customer_id):
 
         # Process payment
         new_balance = current_balance - amount
-        wallet_ref.update({
-            'balance': new_balance,
-            'updatedAt': firestore.SERVER_TIMESTAMP
-        })
+        
+        # Use a transaction to ensure atomic update
+        transaction = db.transaction()
+        @firestore.transactional
+        def update_in_transaction(transaction, wallet_ref):
+            wallet = wallet_ref.get(transaction=transaction)
+            if not wallet.exists:
+                raise ValueError("Wallet no longer exists")
+            
+            current_balance = wallet.to_dict().get('balance', 0.0)
+            if current_balance < amount:
+                raise ValueError("Insufficient balance")
+                
+            transaction.update(wallet_ref, {
+                'balance': firestore.Increment(-amount),
+                'updatedAt': firestore.SERVER_TIMESTAMP
+            })
+            
+            return current_balance - amount
+
+        try:
+            new_balance = update_in_transaction(transaction, wallet_ref)
+        except Exception as e:
+            error_details = {
+                'errorId': str(uuid.uuid4()),
+                'custId': customer_id,
+                'orderId': order_id,
+                'message': f'Transaction failed: {str(e)}'
+            }
+            send_error_to_queue(error_details)
+            return jsonify({'error': str(e)}), 400
 
         return jsonify({
             'message': 'Payment processed successfully',
@@ -130,7 +157,7 @@ def process_payment(customer_id):
         }
         send_error_to_queue(error_details)
         return jsonify({'error': str(e)}), 500
-    
+
 @app.route('/wallet/<customer_id>', methods=['PUT'])
 def update_wallet(customer_id):
     try:

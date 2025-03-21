@@ -21,7 +21,7 @@ services:
     ports:
       - "5003:5003"
     environment:
-      - orderURL=http://order-service:5001/order
+      - orderURL=http://order-service:5001/orders
       - walletURL=http://wallet-service:3000  
       - errorURL=http://error-service:5002
     networks:

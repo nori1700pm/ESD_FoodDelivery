@@ -4,13 +4,67 @@ import { useAuthStore } from './auth'
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
+// Add this helper function at the top of your store
+const cleanObject = (obj) => {
+  const cleaned = {}
+  Object.entries(obj).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        cleaned[key] = cleanObject(value)
+      } else {
+        cleaned[key] = value
+      }
+    }
+  })
+  return cleaned
+}
+
+// Then modify your initCart function to ensure clean data:
+const initCart = async () => {
+
+
+  try {
+    const cartRef = doc(db, 'carts', auth.user.uid)
+    const cartDoc = await getDoc(cartRef)
+
+    if (cartDoc.exists()) {
+      const data = cartDoc.data()
+      items.value = (data.items || []).map(item => cleanObject({
+        id: item.id,
+        name: item.name || 'Unknown Item',
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        restaurantId: item.restaurantId || 'unknown',
+        restaurantName: item.restaurantName || 'Restaurant',
+        restaurant: {
+          id: item.restaurantId || 'unknown',
+          name: item.restaurantName || 'Restaurant'
+        }
+      }))
+    } else {
+      await setDoc(cartRef, {
+        items: [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+      items.value = []
+    }
+    loading.value = false
+    error.value = null
+  } catch (err) {
+    console.error("Error fetching cart:", err)
+    error.value = "Failed to load your cart"
+    loading.value = false
+  }
+}
+
 export const useCartStore = defineStore('cart', () => {
   const items = ref([])
   const loading = ref(true)
   const error = ref(null)
   const auth = useAuthStore()
 
-  const total = computed(() => 
+  const total = computed(() =>
     items.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
   )
 
@@ -49,29 +103,103 @@ export const useCartStore = defineStore('cart', () => {
     error.value = null
 
     try {
+      console.log('=== Adding Item to Cart ===')
+      console.log('Original item:', item)
+      console.log('Restaurant info in item:', {
+        id: item.restaurantId,
+        name: item.restaurantName,
+        restaurant: item.restaurant
+      })
       const cartRef = doc(db, 'carts', auth.user.uid)
       const existingItemIndex = items.value.findIndex(i => i.id === item.id)
 
+      // Log incoming item for debugging
+      console.log('Adding item:', item)
+
+      // Ensure restaurant info is captured with default values
+      const restaurantId = item.restaurantId || item.restaurant?.id || 'unknown'
+      const restaurantName = item.restaurantName || item.restaurant?.name || 'Restaurant'
+
+      // Create a clean item object without undefined values
+      const itemWithRestaurant = {
+        id: item.id,
+        name: item.name || 'Unknown Item',
+        price: item.price || 0,
+        restaurantId: restaurantId,
+        restaurantName: restaurantName,
+        // Only include restaurant object if we have valid data
+        restaurant: {
+          id: restaurantId,
+          name: restaurantName
+        }
+      }
+
+      console.log('Processed item:', itemWithRestaurant)
+
       if (existingItemIndex >= 0) {
         const updatedItems = [...items.value]
-        updatedItems[existingItemIndex].quantity += 1
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: (updatedItems[existingItemIndex].quantity || 0) + 1
+        }
+
+        // Clean the items array before updating Firestore
+        const cleanItems = updatedItems.map(item => ({
+          id: item.id,
+          name: item.name || 'Unknown Item',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          restaurantId: item.restaurantId || 'unknown',
+          restaurantName: item.restaurantName || 'Restaurant',
+          restaurant: {
+            id: item.restaurantId || 'unknown',
+            name: item.restaurantName || 'Restaurant'
+          }
+        }))
+
         await updateDoc(cartRef, {
-          items: updatedItems,
+          items: cleanItems,
           updatedAt: serverTimestamp()
         })
         items.value = updatedItems
       } else {
-        const newItem = { ...item, quantity: 1 }
+        const newItem = {
+          ...itemWithRestaurant,
+          quantity: 1
+        }
         const newItems = [...items.value, newItem]
+
+        // Clean the items array before updating Firestore
+        const cleanItems = newItems.map(item => ({
+          id: item.id,
+          name: item.name || 'Unknown Item',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          restaurantId: item.restaurantId || 'unknown',
+          restaurantName: item.restaurantName || 'Restaurant',
+          restaurant: {
+            id: item.restaurantId || 'unknown',
+            name: item.restaurantName || 'Restaurant'
+          }
+        }))
+
         await updateDoc(cartRef, {
-          items: newItems,
+          items: cleanItems,
           updatedAt: serverTimestamp()
         })
         items.value = newItems
       }
+
+      console.log('Updated cart items:', items.value)
     } catch (err) {
       console.error("Error adding to cart:", err)
       error.value = "Failed to add item to cart"
+      // Log full error details
+      console.log('Full error:', {
+        message: err.message,
+        code: err.code,
+        details: err
+      })
     }
   }
 
@@ -108,15 +236,15 @@ export const useCartStore = defineStore('cart', () => {
   const clearCart = async () => {
     if (!auth.user) return
     error.value = null
-    
+
     try {
       const cartRef = doc(db, 'carts', auth.user.uid)
-      
+
       await updateDoc(cartRef, {
         items: [],
         updatedAt: serverTimestamp()
       })
-      
+
       items.value = []
     } catch (err) {
       console.error("Error clearing cart:", err)
@@ -124,14 +252,14 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  return { 
-    items, 
-    total, 
-    loading, 
-    error, 
-    initCart, 
-    addItem, 
-    removeItem, 
-    clearCart 
+  return {
+    items,
+    total,
+    loading,
+    error,
+    initCart,
+    addItem,
+    removeItem,
+    clearCart
   }
 })

@@ -99,12 +99,23 @@ const handleAddToCart = (menuItem) => {
     return
   }
   
-  cart.addItem({
+  console.log('Restaurant data:', restaurant.value)
+  console.log('Menu item being added:', menuItem)
+  
+  const itemWithRestaurant = {
     id: menuItem.id,
     name: menuItem.name,
     price: menuItem.price,
-    restaurantId: menuItem.restaurantId
-  })
+    restaurantId: restaurant.value.id,
+    restaurantName: restaurant.value.name,
+    restaurant: {
+      id: restaurant.value.id,
+      name: restaurant.value.name
+    }
+  }
+  
+  console.log('Item with restaurant being added to cart:', itemWithRestaurant)
+  cart.addItem(itemWithRestaurant)
 }
 
 onMounted(async () => {
@@ -124,10 +135,14 @@ onMounted(async () => {
       return
     }
     
+    const restaurantData = restaurantDoc.data()
     restaurant.value = {
       id: restaurantDoc.id,
-      ...restaurantDoc.data()
+      name: restaurantData.name,
+      ...restaurantData
     }
+    
+    console.log('Loaded restaurant:', restaurant.value)
     
     // Get menu items for this restaurant
     const menuItemsQuery = query(
@@ -137,10 +152,15 @@ onMounted(async () => {
     
     const menuItemsSnapshot = await getDocs(menuItemsQuery)
     
+    // Add restaurant info to menu items
     menuItems.value = menuItemsSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      restaurantId: restaurant.value.id,
+      restaurantName: restaurant.value.name
     }))
+    
+    console.log('Loaded menu items:', menuItems.value)
   } catch (err) {
     console.error("Error fetching restaurant details:", err)
     error.value = "Failed to load restaurant details. Please try again later."

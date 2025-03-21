@@ -83,6 +83,7 @@ import { db } from '../config/firebase'
 import { useAuthStore } from '../stores/auth'
 import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
+// import { axios } from 'axios'
 
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
@@ -91,12 +92,22 @@ const orders = ref([])
 const loading = ref(true)
 const error = ref(null)
 
+const localURL = "http://localhost:5173/";
+
+
 onMounted(async () => {
   if (user.value) {
     await fetchOrders()
   }
 })
 
+// to use actually
+// const fetchOrders = async () => {
+//     const response = await axios.get(`${localURL}/orders`);
+//     return response.data;
+//   };
+
+// to replace this function to fetch directly from backend after app.py is completed
 const fetchOrders = async () => {
   if (!user.value) return
   

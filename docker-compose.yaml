@@ -1,6 +1,35 @@
 version: '3.8'
 
 services:
+  error-service:
+    build: 
+      context: ./backend/services/error
+      dockerfile: Dockerfile
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - FIREBASE_CONFIG=${FIREBASE_CONFIG}
+    networks:
+      - app-network
+    depends_on:
+      - rabbitmq
+
+  pay-for-delivery:
+    build: 
+      context: ./backend/services/pay-for-delivery
+      dockerfile: Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - orderURL=http://order-service:5001/order
+      - walletURL=http://wallet-service:3000  
+      - errorURL=http://error-service:5002
+    networks:
+      - app-network
+    depends_on:
+      - wallet-service
+      - rabbitmq
+
   wallet-service:
     build: 
       context: ./backend/services/wallet

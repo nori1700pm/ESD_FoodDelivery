@@ -8,17 +8,7 @@
             Order food from your favorite restaurants and have it delivered to your doorstep.
           </p>
         </div>
-        
-        <div>
-          <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-          <ul class="space-y-2">
-            <li><router-link to="/" class="text-gray-300 hover:text-white">Home</router-link></li>
-            <li><router-link to="/restaurants" class="text-gray-300 hover:text-white">Restaurants</router-link></li>
-            <li><router-link to="/orders" class="text-gray-300 hover:text-white">My Orders</router-link></li>
-            <li><router-link to="/profile" class="text-gray-300 hover:text-white">My Profile</router-link></li>
-          </ul>
-        </div>
-        
+
         <div>
           <h3 class="text-lg font-semibold mb-4">Contact Us</h3>
           <ul class="space-y-2">
@@ -47,4 +37,7 @@
 
 <script setup>
 import VueFeather from 'vue-feather'
+
+// Simulate a user authentication state (replace with actual logic)
+const isLoggedIn = false; // Replace with actual state from Vuex, Pinia, or props
 </script>

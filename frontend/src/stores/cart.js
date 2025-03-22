@@ -38,7 +38,8 @@ const initCart = async () => {
         restaurantName: item.restaurantName || 'Restaurant',
         restaurant: {
           id: item.restaurantId || 'unknown',
-          name: item.restaurantName || 'Restaurant'
+          name: item.restaurantName || 'Restaurant',
+          deliveryFee: item.restaurant?.deliveryFee || 0 
         }
       }))
     } else {
@@ -129,7 +130,8 @@ export const useCartStore = defineStore('cart', () => {
         restaurantName: item.restaurantName || item.restaurant?.name || 'Restaurant',
         restaurant: {
           id: item.restaurantId || item.restaurant?.id || 'unknown',
-          name: item.restaurantName || item.restaurant?.name || 'Restaurant'
+          name: item.restaurantName || item.restaurant?.name || 'Restaurant',
+          deliveryFee: item.restaurant?.deliveryFee || 0 
         },
         quantity: 1
       }
@@ -153,7 +155,8 @@ export const useCartStore = defineStore('cart', () => {
           restaurantName: item.restaurantName || 'Restaurant',
           restaurant: {
             id: item.restaurantId || 'unknown',
-            name: item.restaurantName || 'Restaurant'
+            name: item.restaurantName || 'Restaurant',
+            deliveryFee: item.restaurant?.deliveryFee || 0 
           }
         }))
 
@@ -179,7 +182,8 @@ export const useCartStore = defineStore('cart', () => {
           restaurantName: item.restaurantName || 'Restaurant',
           restaurant: {
             id: item.restaurantId || 'unknown',
-            name: item.restaurantName || 'Restaurant'
+            name: item.restaurantName || 'Restaurant',
+            deliveryFee: item.restaurant?.deliveryFee || 0
           }
         }))
 

@@ -63,14 +63,21 @@ def get_orders():
 def get_order(order_id):
     """Get a specific order by ID"""
     try:
+        print(f"Getting order with ID: {order_id}")  # Debug log
         order_ref = db.collection('orders').document(order_id)
         order = order_ref.get()
         
         if not order.exists:
+            print(f"Order not found: {order_id}")  # Debug log
             return jsonify({'error': 'Order not found'}), 404
         
-        return jsonify(order.to_dict() | {'id': order.id})
+        order_data = order.to_dict()
+        order_data['orderId'] = order.id  # Make sure orderId is included
+        
+        print(f"Found order: {json.dumps(order_data, indent=2)}")  # Debug log
+        return jsonify(order_data)
     except Exception as e:
+        print(f"Error getting order: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
 
 @app.route('/orders', methods=['POST'])

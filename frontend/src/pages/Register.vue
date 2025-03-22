@@ -78,12 +78,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../config/firebase'
+import axios from 'axios' // Import axios for API calls
 
 const router = useRouter()
-const auth = useAuthStore()
 
 const email = ref('')
 const password = ref('')
@@ -103,47 +100,20 @@ const handleSubmit = async () => {
     loading.value = true
     error.value = null
     
-    // Register the user
-    const userCredential = await auth.register(email.value, password.value)
-    const userId = userCredential.user.uid
+    // Call the backend API to register the user
+    const response = await axios.post('http://localhost:4000/customers', {
+      email: email.value,
+      password: password.value,
+      name: name.value,
+      phone: phone.value,
+      address: address.value
+    })
     
-    // Create all required collections for this user in a batch
-    const timestamp = serverTimestamp()
-    const batch = [
-      // User profile
-      setDoc(doc(db, 'users', userId), {
-        uid: userId,
-        email: email.value,
-        name: name.value,
-        phone: phone.value,
-        address: address.value,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      }),
-      
-      // Wallet with initial balance of 100
-      setDoc(doc(db, 'wallets', userId), {
-        balance: 100,
-        createdAt: timestamp,
-        updatedAt: timestamp
-      }),
-      
-      // Empty cart
-      setDoc(doc(db, 'carts', userId), {
-        items: [],
-        createdAt: timestamp,
-        updatedAt: timestamp
-      })
-    ]
-    
-    // Execute all promises
-    await Promise.all(batch)
-    
-    console.log("User registration complete with all collections initialized")
+    console.log("User registration complete:", response.data)
     router.push('/')
   } catch (err) {
     console.error('Registration failed:', err)
-    error.value = err.message || 'Failed to register. Please try again.'
+    error.value = err.response?.data?.message || 'Failed to register. Please try again.'
   } finally {
     loading.value = false
   }

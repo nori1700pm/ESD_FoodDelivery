@@ -25,29 +25,42 @@
     </div>
 
     <div v-else class="space-y-6">
-    <div v-for="order in orders" :key="order.id" class="bg-white rounded-lg shadow-lg overflow-hidden">
-      <div class="p-6">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-xl font-bold">
-              {{ getRestaurantDisplay(order) }}
-            </h2>
-            <p class="text-gray-600 flex items-center mt-1">
-              <vue-feather type="clock" size="16" class="mr-1" />
-              {{ formatDate(order.createdAt) }}
-            </p>
-          </div>
+      <div v-for="order in orders" :key="order.orderId" class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h2 class="text-xl font-bold">
+                {{ getRestaurantDisplay(order) }}
+              </h2>
+              <p class="text-gray-600 flex items-center mt-1">
+                <vue-feather type="clock" size="16" class="mr-1" />
+                {{ formatDate(order.createdAt) }}
+              </p>
+            </div>
 
-          <!-- Status badges -->
-          <div class="flex flex-col gap-2">
-            <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.driverStatus)}`">
-              Driver: {{ order.driverStatus }}
-            </div>
-            <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.paymentStatus)}`">
-              Payment: {{ order.paymentStatus }}
+            <!-- Status badges -->
+            <div class="flex flex-col gap-2">
+              <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.driverStatus)}`">
+                Driver: {{ order.driverStatus }}
+              </div>
+              <div v-if="order.driverStatus === 'ASSIGNED' || order.paymentStatus !== 'PENDING'"
+                class="flex items-center gap-2">
+                <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.paymentStatus)}`">
+                  Payment: {{ order.paymentStatus }}
+                </div>
+
+                <!-- Show Pay button only if driver is assigned and payment is pending -->
+                <button 
+                  v-if="order.driverStatus === 'ASSIGNED' && order.paymentStatus !== 'PAID'"
+                  @click="handlePayment(order)"
+                  :disabled="loading"
+                  class="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-1 rounded-full text-sm flex items-center gap-2">
+                  <span v-if="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  {{ loading ? 'Processing...' : 'Pay' }}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
 
           <div class="border-t border-b py-4 mb-4">
@@ -75,6 +88,7 @@
             {{ order }}
           </div> -->
 
+
         </div>
       </div>
     </div>
@@ -88,7 +102,9 @@ import { db } from '../config/firebase'
 import { useAuthStore } from '../stores/auth'
 import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
-import axios from 'axios' // Changed from { axios } to axios
+import axios from 'axios' 
+
+const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5004'
 
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
@@ -110,7 +126,6 @@ onMounted(async () => {
   }
 })
 
-// Cleanup on component unmount
 onUnmounted(() => {
   stopPolling()
 })
@@ -137,9 +152,11 @@ const fetchOrders = async () => {
 
     const response = await axios.get(`${ORDER_SERVICE_URL}/orders?customerId=${user.value.uid}`);
     console.log('Raw orders response:', response.data);
-
+        
     if (response.data && Array.isArray(response.data)) {
       orders.value = response.data.map(order => {
+        const orderId = order.orderId;  // This is what's saved in Firestore
+        console.log('Processing order:', { orderId, order });  // Debug log
         // Parse dates with timezone consideration
         const parseSGDate = (dateStr) => {
           if (!dateStr) return new Date();
@@ -153,14 +170,15 @@ const fetchOrders = async () => {
         const updatedAt = parseSGDate(order.updatedAt);
 
         return {
-          id: order.orderId || order.id,
+          orderId: orderId,
+          id: orderId,
           customerId: order.customerId,
           createdAt: createdAt,
           deliveryAddress: order.deliveryAddress || '',
           items: order.items || [],
           paymentMethod: order.paymentMethod || '',
           paymentStatus: order.paymentStatus || 'PENDING',
-          driverStatus: order.driverStatus || 'PENDING',  // Add this line
+          driverStatus: order.driverStatus || 'PENDING',
           price: parseFloat(order.price) || 0,
           restaurantId: order.restaurantId || '',
           restaurantName: order.restaurantName || 'Restaurant',
@@ -170,11 +188,10 @@ const fetchOrders = async () => {
         };
       })
         .sort((a, b) => {
-          // Sort by createdAt in descending order (newest first)
           return new Date(b.createdAt) - new Date(a.createdAt);
         });
       console.log('Processed orders:', orders.value);
-    }    
+    }
     else {
       orders.value = [];
     }
@@ -186,7 +203,6 @@ const fetchOrders = async () => {
   }
 };
 
-// Update getStatusColor to handle both status types
 const getStatusColor = (status) => {
   switch (status) {
     case 'COMPLETED':
@@ -247,14 +263,11 @@ const formatDate = (timestamp) => {
 };
 
 const getRestaurantDisplay = (order) => {
-  // First try the order's restaurantName
   console.log('Order data for restaurant display:', order); // Debug log
 
   if (order.restaurantName && order.restaurantName !== 'Restaurant') {
     return order.restaurantName;
   }
-
-  // Then try the first item's restaurant info
   if (order.items && order.items[0]) {
     const firstItem = order.items[0];
     if (firstItem.restaurantName) {
@@ -264,12 +277,63 @@ const getRestaurantDisplay = (order) => {
       return firstItem.restaurant.name;
     }
   }
-
-  // Finally, use restaurantId if available
   if (order.restaurantId && order.restaurantId !== 'unknown') {
     return `${order.restaurantName}`;
   }
 
   return 'Restaurant';
 }
+
+const handlePayment = async (order) => {
+  try {
+    loading.value = true;
+    error.value = null;
+
+    console.log('Processing payment for order:', {
+      orderId: order.orderId,
+      fullOrder: order
+    });
+
+    const paymentPayload = {
+      custId: user.value.uid,
+      orderId: order.orderId 
+    };
+
+    console.log('Payment payload:', paymentPayload);  // Debug log to see what's being sent
+
+    const response = await axios.post(
+      `${PAY_DELIVERY_SERVICE_URL}/pay-delivery`,
+      paymentPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log('Payment response:', response.data);
+
+    if (response.data.code === 200) {
+      await fetchOrders();
+    } else {
+      throw new Error(response.data.message || 'Payment failed');
+    }
+  } catch (err) {
+    console.error('Payment error:', err);
+    
+    let errorMessage;
+    if (err.response?.data?.message) {
+      errorMessage = err.response.data.message;
+    } else if (err.message) {
+      errorMessage = err.message;
+    } else {
+      errorMessage = 'An error occurred while processing the payment';
+    }
+
+    error.value = errorMessage;
+    alert(errorMessage);
+  } finally {
+    loading.value = false;
+  }
+};
 </script>

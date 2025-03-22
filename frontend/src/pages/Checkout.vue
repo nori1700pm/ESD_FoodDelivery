@@ -104,8 +104,19 @@ const paymentMethod = ref('wallet')
 const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
-const deliveryFee = ref(2.99)
 const balance = ref(0)
+
+const deliveryFee = computed(() => {
+  if (!items.value.length) {
+    console.log('No items in cart');
+    return 0;
+  }
+  const firstItem = items.value[0];
+  console.log('First item in cart:', firstItem);
+  console.log('Restaurant info:', firstItem.restaurant);
+  console.log('Delivery fee from restaurant:', firstItem.restaurant?.deliveryFee);
+  return firstItem.restaurant?.deliveryFee || 0;
+});
 
 const total = computed(() =>
   items.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -248,11 +259,13 @@ const handleSubmit = async () => {
         quantity: item.quantity,
         restaurant: {
           id: firstItem.restaurantId || firstItem.restaurant?.id,
-          name: firstItem.restaurantName || firstItem.restaurant?.name
+          name: firstItem.restaurantName || firstItem.restaurant?.name,
+          deliveryFee: firstItem.restaurant?.deliveryFee, 
         }
       })),
       address: address.value,
       amount: totalWithDelivery.value,
+      deliveryFee: deliveryFee.value,
       restaurantId: firstItem.restaurantId || firstItem.restaurant?.id,
       restaurantName: firstItem.restaurantName || firstItem.restaurant?.name,
       paymentMethod: paymentMethod.value,

@@ -98,7 +98,7 @@ const handleAddToCart = (menuItem) => {
     alert("Please log in to add items to your cart")
     return
   }
-  
+  console.log('Restaurant delivery fee:', restaurant.value.deliveryFee) 
   console.log('Restaurant data:', restaurant.value)
   console.log('Menu item being added:', menuItem)
   
@@ -110,7 +110,8 @@ const handleAddToCart = (menuItem) => {
     restaurantName: restaurant.value.name,
     restaurant: {
       id: restaurant.value.id,
-      name: restaurant.value.name
+      name: restaurant.value.name,
+      deliveryFee: restaurant.value.deliveryFee 
     }
   }
   

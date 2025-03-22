@@ -57,19 +57,19 @@
     </div>
     
     <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <div class="flex justify-between mb-2">
-        <span>Subtotal</span>
-        <span>${{ total.toFixed(2) }}</span>
-      </div>
-      <div class="flex justify-between mb-2">
-        <span>Delivery Fee</span>
-        <span>$2.99</span>
-      </div>
-      <div class="flex justify-between font-bold text-lg pt-2 border-t mt-2">
-        <span>Total</span>
-        <span>${{ (total + 2.99).toFixed(2) }}</span>
-      </div>
+    <div class="flex justify-between mb-2">
+      <span>Subtotal</span>
+      <span>${{ total.toFixed(2) }}</span>
     </div>
+    <div class="flex justify-between mb-2">
+      <span>Delivery Fee</span>
+      <span>${{ deliveryFee.toFixed(2) }}</span>
+    </div>
+    <div class="flex justify-between font-bold text-lg pt-2 border-t mt-2">
+      <span>Total</span>
+      <span>${{ (total + deliveryFee).toFixed(2) }}</span>
+    </div>
+  </div>
     
     <div class="flex space-x-4">
       <button
@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, watchEffect, onMounted } from 'vue'
+import { ref, watchEffect, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
 import { doc, getDoc } from 'firebase/firestore'
@@ -107,6 +107,13 @@ const handleCheckout = () => {
   router.push('/checkout')
 }
 
+const deliveryFee = computed(() => {
+  if (!items.value.length) return 0;
+  const firstItem = items.value[0];
+  console.log('Getting delivery fee from:', firstItem);
+  return firstItem.restaurant?.deliveryFee || 0;
+});
+
 const removeItemCompletely = (itemId, quantity) => {
   for (let i = 0; i < quantity; i++) {
     cart.removeItem(itemId)
@@ -116,16 +123,29 @@ const removeItemCompletely = (itemId, quantity) => {
 // Fetch restaurant information when items change
 watchEffect(async () => {
   if (items.value.length > 0) {
-    // Assuming all items are from the same restaurant
     const restaurantId = items.value[0].restaurantId
     
     try {
       const restaurantDoc = await getDoc(doc(db, 'restaurants', restaurantId))
       
       if (restaurantDoc.exists()) {
+        const restaurantData = restaurantDoc.data();
         restaurantInfo.value = {
           id: restaurantDoc.id,
-          name: restaurantDoc.data().name
+          name: restaurantData.name,
+          deliveryFee: restaurantData.deliveryFee
+        }
+        
+        // Update the delivery fee in the cart items if needed
+        if (items.value[0].restaurant?.deliveryFee !== restaurantData.deliveryFee) {
+          const updatedItems = items.value.map(item => ({
+            ...item,
+            restaurant: {
+              ...item.restaurant,
+              deliveryFee: restaurantData.deliveryFee
+            }
+          }));
+          cart.updateItems(updatedItems);
         }
       }
     } catch (error) {
@@ -135,6 +155,7 @@ watchEffect(async () => {
     restaurantInfo.value = null
   }
 })
+
 
 onMounted(() => {
   cart.initCart()

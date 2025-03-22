@@ -168,9 +168,14 @@ const fetchOrders = async () => {
           updatedAt: updatedAt,
           driverId: order.driverId || null
         };
-      });
+      })
+        .sort((a, b) => {
+          // Sort by createdAt in descending order (newest first)
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
       console.log('Processed orders:', orders.value);
-    } else {
+    }    
+    else {
       orders.value = [];
     }
   } catch (err) {
@@ -240,6 +245,7 @@ const formatDate = (timestamp) => {
     return 'Unknown date';
   }
 };
+
 const getRestaurantDisplay = (order) => {
   // First try the order's restaurantName
   console.log('Order data for restaurant display:', order); // Debug log

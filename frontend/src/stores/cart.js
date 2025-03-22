@@ -125,13 +125,13 @@ export const useCartStore = defineStore('cart', () => {
         id: item.id,
         name: item.name || 'Unknown Item',
         price: item.price || 0,
-        restaurantId: restaurantId,
-        restaurantName: restaurantName,
-        // Only include restaurant object if we have valid data
+        restaurantId: item.restaurantId || item.restaurant?.id || 'unknown',
+        restaurantName: item.restaurantName || item.restaurant?.name || 'Restaurant',
         restaurant: {
-          id: restaurantId,
-          name: restaurantName
-        }
+          id: item.restaurantId || item.restaurant?.id || 'unknown',
+          name: item.restaurantName || item.restaurant?.name || 'Restaurant'
+        },
+        quantity: 1
       }
 
       console.log('Processed item:', itemWithRestaurant)

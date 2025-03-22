@@ -175,20 +175,21 @@ onMounted(() => {
 const validateRestaurantInfo = (item) => {
   console.log('Validating restaurant info for item:', item)
 
-  const restaurantInfo = {
-    id: item.restaurant?.id || item.restaurantId,
-    name: item.restaurant?.name || item.restaurantName
-  }
+  const restaurantId = item.restaurantId || item.restaurant?.id
+  const restaurantName = item.restaurantName || item.restaurant?.name
 
-  if (!restaurantInfo.id || !restaurantInfo.name) {
+  if (!restaurantId || !restaurantName) {
     console.warn('Missing restaurant information:', {
       item,
-      extracted: restaurantInfo
+      extracted: { id: restaurantId, name: restaurantName }
     })
     return null
   }
 
-  return restaurantInfo
+  return {
+    id: restaurantId,
+    name: restaurantName
+  }
 }
 
 const handleSubmit = async () => {
@@ -240,16 +241,25 @@ const handleSubmit = async () => {
     const orderPayload = {
       custId: user.value.uid,
       orderId: `order-${Date.now()}-${user.value.uid.slice(0, 8)}`,
-      items: cleanedItems,
+      items: cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        restaurant: {
+          id: firstItem.restaurantId || firstItem.restaurant?.id,
+          name: firstItem.restaurantName || firstItem.restaurant?.name
+        }
+      })),
       address: address.value,
       amount: totalWithDelivery.value,
-      restaurantId: restaurantInfo.id,
-      restaurantName: restaurantInfo.name,
+      restaurantId: firstItem.restaurantId || firstItem.restaurant?.id,
+      restaurantName: firstItem.restaurantName || firstItem.restaurant?.name,
       paymentMethod: paymentMethod.value,
-      status: 'PENDING',            
-      driverStatus: 'PENDING',      
-      paymentStatus: 'PENDING',    
-      driverId: null       
+      status: 'PENDING',
+      driverStatus: 'PENDING',
+      paymentStatus: 'PENDING',
+      driverId: null
     }
 
     console.log('Final order payload:', orderPayload)

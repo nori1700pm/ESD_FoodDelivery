@@ -57,10 +57,18 @@ def create_order():
         # Get restaurant info from first item only
         first_item = data['items'][0]
         restaurant_info = {
-            'restaurantId': first_item.get('restaurant', {}).get('id', 'unknown'),
-            'restaurantName': first_item.get('restaurant', {}).get('name', 'Unknown Restaurant')
+            'restaurantId': (
+                first_item.get('restaurantId') or 
+                first_item.get('restaurant', {}).get('id') or 
+                'unknown'
+            ),
+            'restaurantName': (
+                first_item.get('restaurantName') or 
+                first_item.get('restaurant', {}).get('name') or 
+                'Unknown Restaurant'
+            )
         }
-
+        print("Extracted restaurant info:", json.dumps(restaurant_info, indent=2))  # Debug log
         # Clean up items to remove redundant restaurant info
         cleaned_items = []
         for item in data['items']:

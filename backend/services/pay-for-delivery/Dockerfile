@@ -17,7 +17,7 @@ COPY app.py .
 COPY invokes.py .
 
 # Expose the port
-EXPOSE 5003
+EXPOSE 5004
 
 # Run the Flask app
 CMD ["python", "app.py"]

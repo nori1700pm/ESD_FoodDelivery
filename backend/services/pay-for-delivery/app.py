@@ -4,7 +4,8 @@ from invokes import invoke_http
 import os
 from os import environ
 import uuid
-import datetime  # Add this import
+from datetime import datetime, timezone, timedelta
+import json 
 
 app = Flask(__name__)
 CORS(app, 
@@ -16,13 +17,17 @@ CORS(app,
          "supports_credentials": True
      }})
 
-order_URL = environ.get('orderURL') or 'http://localhost:5001/orders'
-wallet_URL = environ.get('walletURL') or 'http://localhost:3000'
-error_URL = environ.get('errorURL') or 'http://localhost:5002'
+PORT = int(os.environ.get('PORT', 5004))
+order_URL = environ.get('orderURL') or 'http://localhost:5001'
+wallet_URL = environ.get('walletURL') or 'http://localhost:5002'
+error_URL = environ.get('errorURL') or 'http://localhost:5003'
 
 @app.route("/create-order", methods=['POST', 'OPTIONS'])
 def create_order():
     # Handle preflight request
+    sg_timezone = timezone(timedelta(hours=8))
+    current_sg_time = datetime.now(sg_timezone)
+    timestamp = current_sg_time.isoformat()
     if request.method == 'OPTIONS':
         response = app.make_default_options_response()
         response.headers['Access-Control-Allow-Origin'] = 'http://localhost:5173'
@@ -49,25 +54,44 @@ def create_order():
                 "message": f"Missing required fields: {', '.join(missing_fields)}"
             }), 400
 
-        # Prepare order data
-        order_data = {
-            'customerId': data['custId'],
-            'items': data['items'],
-            'deliveryAddress': data['address'],
-            'price': data['amount'],
-            'status': 'PENDING',
-            'paymentStatus': 'PENDING',
-            'restaurantId': data.get('restaurantId', 'unknown'),
-            'restaurantName': data.get('restaurantName', 'Unknown Restaurant'),
-            'orderId': data['orderId'],
-            'createdAt': datetime.datetime.utcnow().isoformat(),
-            'updatedAt': datetime.datetime.utcnow().isoformat()
+        # Get restaurant info from first item only
+        first_item = data['items'][0]
+        restaurant_info = {
+            'restaurantId': first_item.get('restaurant', {}).get('id', 'unknown'),
+            'restaurantName': first_item.get('restaurant', {}).get('name', 'Unknown Restaurant')
         }
 
-        # Create order in order service
+        # Clean up items to remove redundant restaurant info
+        cleaned_items = []
+        for item in data['items']:
+            cleaned_item = {
+                'id': item['id'],
+                'name': item['name'],
+                'price': item['price'],
+                'quantity': item['quantity']
+            }
+            cleaned_items.append(cleaned_item)
+
+        # Prepare order data with cleaned structure
+        order_data = {
+            'customerId': data['custId'],
+            'orderId': data['orderId'],
+            'items': cleaned_items,
+            'deliveryAddress': data['address'],
+            'price': data['amount'],
+            'driverId': None,
+            'driverStatus': 'PENDING',
+            'paymentStatus': 'PENDING',
+            'status': 'PENDING', 
+            'restaurantId': restaurant_info['restaurantId'],
+            'restaurantName': restaurant_info['restaurantName'],
+            'createdAt': timestamp,
+            'updatedAt': timestamp
+        }
+
         print('\n-----Invoking order microservice-----')
         order_result = invoke_http(
-            f"{order_URL}",
+            f"{order_URL}/orders",
             method='POST',
             json=order_data
         )
@@ -85,9 +109,9 @@ def create_order():
             "code": 500,
             "message": f"An error occurred while creating the order: {str(e)}"
         }), 500
-     
+    
 @app.route("/pay-delivery", methods=['POST'])
-def pay_delivery():
+def pay_delivery(): 
     if not request.is_json:
         return jsonify({
             "code": 400,
@@ -111,22 +135,22 @@ def pay_delivery():
         # Get order details from order microservice
         print('\n-----Invoking order microservice-----')
         order_result = invoke_http(
-            f"{order_URL}/{order_id}",
+            f"{order_URL}/orders/{order_id}",
             method='GET'
         )
         print('order_result:', order_result)
         
-        if order_result.get('code', 200) not in range(200, 300):
-            raise ValueError("Order not found")
+        if 'error' in order_result:
+            raise ValueError(order_result['error'])
 
         # Check if driver is assigned
-        if not order_result.get('data', {}).get('driverId'):
+        if not order_result.get('driverId'):  # Changed this line
             return jsonify({
                 "code": 400,
                 "message": "Cannot process payment: Driver not yet assigned"
             }), 400
 
-        price = order_result.get('data', {}).get('price')
+        price = order_result.get('price')  # Changed this line
         if not price:
             raise ValueError("Invalid order: price not found")
 
@@ -143,19 +167,25 @@ def pay_delivery():
         print('wallet_result:', wallet_result)
 
         if wallet_result.get('error'):
-            # Update order status to payment failed
+            # Update payment status to failed
             invoke_http(
-                f"{order_URL}/{order_id}/status",
+                f"{order_URL}/orders/{order_id}/status",
                 method='PATCH',
-                json={"status": "PAYMENT_FAILED"}
+                json={
+                    "paymentStatus": "PAYMENT_FAILED",
+                    "status": "PAYMENT_FAILED"
+                }
             )
             raise ValueError(wallet_result.get('error'))
 
-        # Update order status to paid
+        # Update payment status to paid
         invoke_http(
-            f"{order_URL}/{order_id}/status",
+            f"{order_URL}/orders/{order_id}/status",
             method='PATCH',
-            json={"status": "PAID"}
+            json={
+                "paymentStatus": "PAID",
+                "status": "PAID"
+            }
         )
 
         return jsonify({
@@ -189,7 +219,7 @@ def pay_delivery():
             "code": 500,
             "message": f"An error occurred while processing the payment: {str(e)}"
         }), 500
-
+    
 @app.route("/user-profile/<user_id>", methods=['GET'])
 def get_user_profile(user_id):
     try:
@@ -216,14 +246,17 @@ def get_user_profile(user_id):
                     "message": wallet_response['error']
                 }), 404
             
-            # Combine profile and balance data
+            # Pass through ALL fields from wallet service
             response_data = {
                 "uid": user_id,
                 "address": wallet_response.get('address', ''),
                 "name": wallet_response.get('name', ''),
                 "email": wallet_response.get('email', ''),
+                "phone": wallet_response.get('phone', ''),
                 "balance": balance_response.get('balance', 0.0)
             }
+            
+            print('Processed response data:', response_data)
             
             return jsonify({
                 "code": 200,
@@ -244,4 +277,4 @@ def get_user_profile(user_id):
     
 if __name__ == "__main__":
     print("This is flask " + os.path.basename(__file__) + " for handling payment")
-    app.run(host="0.0.0.0", port=5003, debug=True)
+    app.run(host="0.0.0.0", port=PORT, debug=True)

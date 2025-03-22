@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useAuthStore } from './auth'
 import axios from 'axios'
 
-const WALLET_URL = 'http://localhost:3000'
-const PAY_DELIVERY_URL = 'http://localhost:5003'
+const WALLET_URL = 'http://localhost:5002'
+const PAY_DELIVERY_URL = 'http://localhost:5004'
 
 
 export const useWalletStore = defineStore('wallet', () => {

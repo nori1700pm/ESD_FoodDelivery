@@ -112,7 +112,7 @@ const total = computed(() =>
 )
 const totalWithDelivery = computed(() => total.value + deliveryFee.value)
 
-const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5003'
+const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5004'
 
 const getProfileAndBalance = async () => {
   if (!user.value) {
@@ -132,11 +132,15 @@ const getProfileAndBalance = async () => {
 
     if (result.code === 200 && result.data) {
       console.log('Profile data received:', result.data)
-      // Set address if available
-      if (result.data.address) {
+      
+      // Check for address and make sure it's not undefined or null before setting
+      if (result.data.address && result.data.address.trim() !== '') {
         console.log('Setting address:', result.data.address)
         address.value = result.data.address
+      } else {
+        console.log('No address found in profile data')
       }
+      
       // Set balance if available
       if (result.data.balance !== undefined) {
         console.log('Setting balance:', result.data.balance)
@@ -151,6 +155,7 @@ const getProfileAndBalance = async () => {
     error.value = `Unable to load user data: ${err.message}`
   }
 }
+
 
 // Single watcher for user changes
 watch(user, async (newUser) => {
@@ -213,15 +218,6 @@ const handleSubmit = async () => {
     const firstItem = cartItems[0]
     console.log('First cart item:', firstItem)
 
-    // Log all available restaurant information
-    console.log('Restaurant information available:', {
-      fromRestaurantProp: firstItem.restaurant,
-      directProps: {
-        id: firstItem.restaurantId,
-        name: firstItem.restaurantName
-      }
-    })
-
     // Get restaurant info with fallbacks
     const restaurantInfo = validateRestaurantInfo(firstItem)
     if (!restaurantInfo) {
@@ -230,39 +226,30 @@ const handleSubmit = async () => {
 
     console.log('Extracted restaurant info:', restaurantInfo)
 
-    // Create items array with restaurant info preserved
-    const itemsWithRestaurant = cartItems.map(item => ({
+    // Create items array without redundant restaurant info
+    const cleanedItems = cartItems.map(item => ({
       id: item.id,
       name: item.name,
       price: item.price,
-      quantity: item.quantity,
-      restaurantId: restaurantInfo.id,
-      restaurantName: restaurantInfo.name,
-      restaurant: {
-        id: restaurantInfo.id,
-        name: restaurantInfo.name
-      }
+      quantity: item.quantity
     }))
 
-    console.log('Processed items with restaurant info:', itemsWithRestaurant)
+    console.log('Cleaned items:', cleanedItems)
 
     // Create order payload
     const orderPayload = {
       custId: user.value.uid,
       orderId: `order-${Date.now()}-${user.value.uid.slice(0, 8)}`,
-      items: itemsWithRestaurant,
+      items: cleanedItems,
       address: address.value,
       amount: totalWithDelivery.value,
       restaurantId: restaurantInfo.id,
       restaurantName: restaurantInfo.name,
       paymentMethod: paymentMethod.value,
-      status: 'PENDING',
-      paymentStatus: 'PENDING',
-      // Include additional restaurant information
-      restaurant: {
-        id: restaurantInfo.id,
-        name: restaurantInfo.name
-      }
+      status: 'PENDING',            
+      driverStatus: 'PENDING',      
+      paymentStatus: 'PENDING',    
+      driverId: null       
     }
 
     console.log('Final order payload:', orderPayload)

@@ -5,10 +5,13 @@ services:
     build: 
       context: ./backend/services/error
       dockerfile: Dockerfile
+    ports:
+      - "5003:5003"
     environment:
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
+      - PORT=5003
     networks:
       - app-network
     depends_on:
@@ -19,11 +22,12 @@ services:
       context: ./backend/services/pay-for-delivery
       dockerfile: Dockerfile
     ports:
-      - "5003:5003"
+      - "5004:5004"
     environment:
-      - orderURL=http://order-service:5001/orders
-      - walletURL=http://wallet-service:3000  
-      - errorURL=http://error-service:5002
+      - orderURL=http://order-service:5001
+      - walletURL=http://wallet-service:5002
+      - errorURL=http://error-service:5003
+      - PORT=5004
     networks:
       - app-network
     depends_on:
@@ -35,14 +39,14 @@ services:
       context: ./backend/services/wallet
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "5002:5002"
     environment:
       - DEBUG=false
-      - PORT=3000
+      - PORT=5002
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
       - RABBITMQ_HOST=rabbitmq
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -67,7 +71,7 @@ services:
       retries: 3
     restart: unless-stopped
     ports:
-      - "3001:5001"
+      - "5001:5001"
     networks:
       - app-network
 
@@ -90,7 +94,3 @@ services:
 networks:
   app-network:
     driver: bridge
-
-
-
-   

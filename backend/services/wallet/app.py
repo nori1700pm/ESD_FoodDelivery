@@ -16,7 +16,7 @@ firebase_config_dict = json.loads(firebase_config)
 cred = credentials.Certificate(firebase_config_dict)
 initialize_app(cred)
 db = firestore.client()
-
+PORT = int(os.environ.get('PORT', 5002))
 RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
 
 # RabbitMQ setup
@@ -83,16 +83,15 @@ def process_payment(customer_id):
         wallet = wallet_ref.get()
 
         if not wallet.exists:
-            error_details = {
-                'errorId': str(uuid.uuid4()),
-                'custId': customer_id,
-                'orderId': order_id,
-                'message': 'Wallet not found'
-            }
-            send_error_to_queue(error_details)
-            return jsonify({'error': 'Wallet not found'}), 404
-
-        current_balance = wallet.to_dict().get('balance', 0.0)
+            wallet_ref.set({
+                'balance': 0.0,
+                'customerId': customer_id,
+                'createdAt': firestore.SERVER_TIMESTAMP,
+                'updatedAt': firestore.SERVER_TIMESTAMP
+            })
+            current_balance = 0.0
+        else:
+            current_balance = wallet.to_dict().get('balance', 0.0)
 
         if current_balance < amount:
             error_details = {
@@ -211,17 +210,18 @@ def get_user_profile(user_id):
             return jsonify(error_response), 404
             
         user_data = user.to_dict()
-        print(f"Raw user data from Firebase: {user_data}")
+        print(f"Raw user data from Firebase:", user_data)
         
-        # Construct response with default values
+        # Make sure we're returning ALL fields from Firestore
         response_data = {
             'uid': user_id,
             'address': user_data.get('address', ''),
             'name': user_data.get('name', ''),
-            'email': user_data.get('email', '')
+            'email': user_data.get('email', ''),
+            'phone': user_data.get('phone', '')  # Also include phone
         }
         
-        print(f"Sending response: {response_data}")
+        print(f"Sending response from wallet service:", response_data)
         return jsonify(response_data), 200
         
     except Exception as e:
@@ -231,4 +231,4 @@ def get_user_profile(user_id):
         return jsonify({'error': error_msg}), 500
     
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=PORT)

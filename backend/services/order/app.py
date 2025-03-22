@@ -3,6 +3,8 @@ from flask_cors import CORS
 import json
 import os
 from firebase_admin import credentials, firestore, initialize_app
+from datetime import datetime, timezone, timedelta
+
 
 app = Flask(__name__)
 CORS(app, 
@@ -22,31 +24,39 @@ cred = credentials.Certificate(firebase_config_dict)
 initialize_app(cred)
 db = firestore.client()
 
+PORT = int(os.environ.get('PORT', 5001))
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'ok', 'service': 'order-service'})
   
-# Get orders by customer ID
 @app.route('/orders', methods=['GET'])
 def get_orders():
     """Get all orders or filter by customerId"""
     try:
+        print("="*50)
         print("GET /orders hit")
         customer_id = request.args.get('customerId')
+        print(f"Requesting orders for customer ID: {customer_id}")
         
         if customer_id:
             orders_ref = db.collection('orders')
             query = orders_ref.where('customerId', '==', customer_id)
             orders = [doc.to_dict() | {'id': doc.id} for doc in query.stream()]
+            print(f"Found {len(orders)} orders for customer")
+            print("Orders:", json.dumps(orders, indent=2))
         else:
             orders_ref = db.collection('orders')
-            print(orders_ref)
+            print("No customer ID provided, fetching all orders")
             orders = [doc.to_dict() | {'id': doc.id} for doc in orders_ref.stream()]
+            print(f"Found {len(orders)} total orders")
         
         return jsonify(orders)
     except Exception as e:
+        print(f"Error in get_orders: {str(e)}")
+        print(f"Stack trace:\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/orders/<order_id>', methods=['GET'])
@@ -65,40 +75,36 @@ def get_order(order_id):
 
 @app.route('/orders', methods=['POST'])
 def create_order():
-    """Create a new order"""
     try:
         order_data = request.json
-        print("Received order data:", order_data)  # Debug log
+        print("Received order data:", order_data)
         
         # Validate required fields
         required_fields = ['customerId', 'items', 'price', 'status', 'deliveryAddress']
         missing_fields = [field for field in required_fields if field not in order_data]
         if missing_fields:
-            print(f"Missing fields: {missing_fields}")  # Debug log
             return jsonify({'error': f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+        # Ensure timestamps are in SGT
+        sg_timezone = timezone(timedelta(hours=8))
+        current_sg_time = datetime.now(sg_timezone)
         
-        # Ensure restaurant info is present
-        if 'restaurantName' not in order_data or not order_data['restaurantName']:
-            print("Restaurant name missing or empty")  # Debug log
-            # Try to get restaurant name from first item
-            if order_data.get('items') and len(order_data['items']) > 0:
-                first_item = order_data['items'][0]
-                order_data['restaurantName'] = (
-                    first_item.get('restaurantName') or 
-                    first_item.get('restaurant', {}).get('name') or 
-                    'Unknown Restaurant'
-                )
-        
-        print("Final order data being saved:", order_data)  # Debug log
+        # If timestamps aren't provided, use current SGT
+        if 'createdAt' not in order_data:
+            order_data['createdAt'] = current_sg_time.isoformat()
+        if 'updatedAt' not in order_data:
+            order_data['updatedAt'] = current_sg_time.isoformat()
+            
+        print("Final order data being saved:", order_data)
         
         # Save to Firestore
         order_ref = db.collection('orders').document(order_data.get('orderId'))
         order_ref.set(order_data)
         
-        # Return the created order with ID
         return jsonify(order_data), 201
+        
     except Exception as e:
-        print(f"Error creating order: {str(e)}")  # Debug log
+        print(f"Error creating order: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 @app.route('/orders/<order_id>', methods=['PUT'])
@@ -125,12 +131,16 @@ def update_order(order_id):
 
 @app.route('/orders/<order_id>/status', methods=['PATCH'])
 def update_order_status(order_id):
-    """Update just the status of an order"""
+    """Update order status fields"""
     try:
         status_data = request.json
+        valid_status_fields = ['status', 'driverStatus', 'paymentStatus', 'driverId']
         
-        if 'status' not in status_data:
-            return jsonify({'error': 'Status field is required'}), 400
+        # Check if at least one valid status field is present
+        if not any(field in status_data for field in valid_status_fields):
+            return jsonify({
+                'error': 'At least one status field (status, driverStatus, paymentStatus) is required'
+            }), 400
         
         # Update in Firestore
         order_ref = db.collection('orders').document(order_id)
@@ -139,19 +149,33 @@ def update_order_status(order_id):
         if not order.exists:
             return jsonify({'error': 'Order not found'}), 404
         
-        order_ref.update({
-            'status': status_data['status'],
-            'updatedAt': firestore.SERVER_TIMESTAMP
-        })
+        # Create update data without SERVER_TIMESTAMP
+        update_data = {}
         
-        return jsonify({'id': order_id, 'status': status_data['status']})
+        # Include any provided status fields
+        for field in valid_status_fields:
+            if field in status_data:
+                update_data[field] = status_data[field]
+        
+        # Add timestamp separately
+        sg_timezone = timezone(timedelta(hours=8))
+        current_sg_time = datetime.now(sg_timezone)
+        update_data['updatedAt'] = current_sg_time.isoformat()
+        
+        # Perform the update
+        order_ref.update(update_data)
+        
+        # Return the updated data
+        response_data = {
+            'id': order_id,
+            **update_data
+        }
+        
+        return jsonify(response_data)
     except Exception as e:
+        print(f"Error updating order status: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5001))
-    app.run(host="0.0.0.0", port=port, debug=True)
-
-# if __name__ == '__main__':
-#     port = int(os.environ.get('PORT', 3000))
-#     app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', 'false').lower() == 'true')
+    
+if __name__ == '__main__':
+    print("This is flask " + os.path.basename(__file__) + " for Order microservice")
+    app.run(host='0.0.0.0', port=PORT, debug=True)

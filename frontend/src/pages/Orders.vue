@@ -80,14 +80,6 @@
             <span class="font-bold">${{ order.price.toFixed(2) }}</span>
           </div>
 
-          <!-- show all order info -->
-          <!-- <div>
-            <div class="mb-4">
-              <b> temporarily show all user's orders - will add a filter later </b>
-            </div>
-            {{ order }}
-          </div> -->
-
 
         </div>
       </div>

@@ -13,6 +13,7 @@ import Orders from '../pages/Orders.vue'
 import Profile from '../pages/Profile.vue'
 import Wallet from '../pages/Wallet.vue'
 import NotFound from '../pages/NotFound.vue'
+import ActiveOrder from '../pages/ActiveOrder.vue'
 
 const routes = [
   {
@@ -77,6 +78,12 @@ const routes = [
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: NotFound
+  },
+  {
+    path: '/activeOrder',
+    name: 'ActiveOrder',
+    component: ActiveOrder,
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -87,7 +94,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
-  
+
   if (to.meta.requiresAuth && !auth.user && !auth.loading) {
     next('/login')
   } else if (to.path === '/logout') {

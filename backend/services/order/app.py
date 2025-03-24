@@ -56,7 +56,7 @@ def get_orders():
         return jsonify(orders)
     except Exception as e:
         print(f"Error in get_orders: {str(e)}")
-        print(f"Stack trace:\n{traceback.format_exc()}")
+        # print(f"Stack trace:\n{traceback.format_exc()}") as this is optional unless you need full stack trace
         return jsonify({'error': str(e)}), 500
 
 @app.route('/orders/<order_id>', methods=['GET'])

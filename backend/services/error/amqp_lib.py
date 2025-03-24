@@ -8,7 +8,8 @@ https://pika.readthedocs.io/en/stable/_modules/pika/exceptions.html#ConnectionCl
 import time
 import pika
 
-
+# code to connect to RabbitMQ server, facilitate publish and consumption  
+# to edit here in order to establish more queues
 def connect(hostname, port, exchange_name, exchange_type, max_retries=12, retry_interval=5,):
      retries = 0
 

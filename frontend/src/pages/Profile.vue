@@ -146,15 +146,6 @@ const handleSubmit = async () => {
     saving.value = true
     error.value = null
     
-    // Update Firestore
-    const userRef = doc(db, 'users', user.value.uid)
-    await updateDoc(userRef, {
-      name: profile.value.name,
-      phone: profile.value.phone,
-      address: profile.value.address,
-      updatedAt: serverTimestamp()
-    })
-    
     // Call customer microservice to update user info in the backend
     await axios.put(`http://localhost:4000/customers/${user.value.uid}`, {
       name: profile.value.name,
@@ -165,8 +156,8 @@ const handleSubmit = async () => {
     successMessage.value = "Profile updated successfully"
     setTimeout(() => successMessage.value = null, 3000)
   } catch (err) {
-    console.error("Error updating profile:", err)
-    error.value = "Failed to update profile"
+    console.error("Error updating profile:", err.response ? err.response.data : err.message)
+    error.value = err.response?.data?.message || "Failed to update profile"
   } finally {
     saving.value = false
   }

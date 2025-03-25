@@ -31,14 +31,6 @@ const auth = useAuthStore()
 const { user } = storeToRefs(auth)
 const GETDRIVERBYEMAIL_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/drivers/'
 
-// Watch for changes to `user` and make the API call once the user is populated
-watch(user, (newUser) => {
-    if (newUser && newUser.email) {
-        console.log('User email:', newUser.email)
-        fetchDriverInfo(newUser.email) // Pass the email to fetch orders
-    }
-}, { immediate: true })
-
 const fetchDriverInfo = async (email) => {
     try {
         const response = await axios.get(`${GETDRIVERBYEMAIL_SERVICE_URL}${email}/`)
@@ -48,6 +40,14 @@ const fetchDriverInfo = async (email) => {
         console.error('Error fetching driver data', error.message)
     }
 }
+
+// Move the watch function here, after fetchDriverInfo is defined
+watch(user, (newUser) => {
+    if (newUser && newUser.email) {
+        console.log('User email:', newUser.email)
+        fetchDriverInfo(newUser.email) // Pass the email to fetch orders
+    }
+}, { immediate: true })
 
 const fetchAllOrders = async () => {
     try {

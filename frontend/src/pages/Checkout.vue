@@ -217,7 +217,7 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     error.value = null
-    console.log('=== Starting Order Placement Process ===')
+    console.log('=== Starting Payment Process ===')
 
     const cartItems = items.value
     console.log('Cart items at checkout:', cartItems)
@@ -236,22 +236,14 @@ const handleSubmit = async () => {
       throw new Error('Missing or invalid restaurant information')
     }
 
-    console.log('Extracted restaurant info:', restaurantInfo)
+    // Create order ID
+    const orderId = `order-${Date.now()}-${user.value.uid.slice(0, 8)}`
 
-    // Create items array without redundant restaurant info
-    const cleanedItems = cartItems.map(item => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity
-    }))
-
-    console.log('Cleaned items:', cleanedItems)
-
-    // Create order payload
-    const orderPayload = {
+    // First, process the payment
+    const paymentPayload = {
       custId: user.value.uid,
-      orderId: `order-${Date.now()}-${user.value.uid.slice(0, 8)}`,
+      orderId: orderId,
+      amount: totalWithDelivery.value,
       items: cartItems.map(item => ({
         id: item.id,
         name: item.name,
@@ -264,23 +256,16 @@ const handleSubmit = async () => {
         }
       })),
       address: address.value,
-      amount: totalWithDelivery.value,
       deliveryFee: deliveryFee.value,
       restaurantId: firstItem.restaurantId || firstItem.restaurant?.id,
       restaurantName: firstItem.restaurantName || firstItem.restaurant?.name,
-      paymentMethod: paymentMethod.value,
-      status: 'PENDING',
-      driverStatus: 'PENDING',
-      paymentStatus: 'PENDING',
-      driverId: null
+      paymentMethod: paymentMethod.value
     }
 
-    console.log('Final order payload:', orderPayload)
-
-    // Create order using axios
-    const { data } = await axios.post(
-      `${PAY_DELIVERY_SERVICE_URL}/create-order`,
-      orderPayload,
+    console.log('Processing payment with payload:', paymentPayload)
+    const paymentResponse = await axios.post(
+      `${PAY_DELIVERY_SERVICE_URL}/pay-delivery`,
+      paymentPayload,
       {
         headers: {
           'Content-Type': 'application/json'
@@ -288,10 +273,9 @@ const handleSubmit = async () => {
       }
     )
 
-    console.log('Order creation response:', data)
-
-    if (data.code !== 200) {
-      throw new Error(data.message || 'Order creation failed')
+    if (paymentResponse.data.code !== 200) {
+      error.value = paymentResponse.data.message || 'Payment failed'
+      return
     }
 
     // Clear cart and show success message

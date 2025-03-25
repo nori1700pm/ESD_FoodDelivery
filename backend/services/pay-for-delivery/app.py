@@ -131,78 +131,95 @@ def pay_delivery():
         data = request.get_json()
         print('Received data:', data)
         
-        cust_id = data.get('custId')
-        order_id = data.get('orderId')
-
-        if not all([cust_id, order_id]):
+        # Validate required fields
+        required_fields = ['custId', 'orderId', 'amount', 'items', 'address', 'restaurantId', 'restaurantName']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
             return jsonify({
                 "code": 400,
-                "message": "Missing customer ID or order ID."
-            }), 400
-        
-        # Get order details from order microservice
-        print('\n-----Invoking order microservice-----')
-        order_result = invoke_http(
-            f"{order_URL}/orders/{order_id}",
-            method='GET'
-        )
-        print('order_result:', order_result)
-        
-        if 'error' in order_result:
-            raise ValueError(order_result['error'])
-
-        # Check if driver is assigned
-        if not order_result.get('driverId'):  # Changed this line
-            return jsonify({
-                "code": 400,
-                "message": "Cannot process payment: Driver not yet assigned"
+                "message": f"Missing required fields: {', '.join(missing_fields)}"
             }), 400
 
-        price = order_result.get('price')  # Changed this line
-        if not price:
-            raise ValueError("Invalid order: price not found")
-
-        # Process payment through wallet microservice
+        # Process payment through wallet microservice first
         print('\n-----Invoking wallet microservice-----')
         wallet_result = invoke_http(
-            f"{wallet_URL}/wallet/{cust_id}/process-payment",
+            f"{wallet_URL}/wallet/{data['custId']}/process-payment",
             method='POST',
             json={
-                "amount": price,
-                "orderId": order_id
+                "amount": data['amount'],
+                "orderId": data['orderId']
             }
         )
         print('wallet_result:', wallet_result)
 
         if wallet_result.get('error'):
-            # Update payment status to failed
-            invoke_http(
-                f"{order_URL}/orders/{order_id}/status",
-                method='PATCH',
-                json={
-                    "paymentStatus": "PAYMENT_FAILED",
-                    "status": "PAYMENT_FAILED"
-                }
-            )
-            raise ValueError(wallet_result.get('error'))
+            # Payment failed - return error message
+            return jsonify({
+                "code": 400,
+                "message": "Insufficient balance",
+                "data": wallet_result
+            }), 400
 
-        # Update payment status to paid
-        invoke_http(
-            f"{order_URL}/orders/{order_id}/status",
-            method='PATCH',
-            json={
-                "paymentStatus": "PAID",
-                "status": "PAID"
+        # Payment successful - create order
+        print('\n-----Creating order-----')
+        sg_timezone = timezone(timedelta(hours=8))
+        current_sg_time = datetime.now(sg_timezone)
+        timestamp = current_sg_time.isoformat()
+
+        # Clean up items
+        cleaned_items = []
+        for item in data['items']:
+            cleaned_item = {
+                'id': item['id'],
+                'name': item['name'],
+                'price': item['price'],
+                'quantity': item['quantity']
             }
+            cleaned_items.append(cleaned_item)
+
+        # Prepare order data
+        order_data = {
+            'customerId': data['custId'],
+            'orderId': data['orderId'],
+            'items': cleaned_items,
+            'deliveryAddress': data['address'],
+            'price': data['amount'],
+            'driverId': None,
+            'driverStatus': 'PENDING',
+            'paymentStatus': 'PAID',  # Set as PAID since payment successful
+            'status': 'PAID',  # Set as PAID since payment successful
+            'restaurantId': data['restaurantId'],
+            'restaurantName': data['restaurantName'],
+            'createdAt': timestamp,
+            'updatedAt': timestamp
+        }
+
+        print('\n-----Invoking order microservice-----')
+        order_result = invoke_http(
+            f"{order_URL}/orders",
+            method='POST',
+            json=order_data
         )
+        print('order_result:', order_result)
+
+        if isinstance(order_result, dict) and order_result.get('error'):
+            # Order creation failed
+            return jsonify({
+                "code": 500,
+                "message": f"Payment successful but order creation failed: {order_result.get('error')}",
+                "data": {
+                    "wallet_result": wallet_result,
+                    "order_error": order_result
+                }
+            }), 500
 
         return jsonify({
             "code": 200,
             "data": {
-                "order_result": order_result,
-                "wallet_result": wallet_result
+                "wallet_result": wallet_result,
+                "order_result": order_result
             },
-            "message": "Payment processed successfully"
+            "message": "Payment processed and order created successfully"
         }), 200
 
     except Exception as e:
@@ -210,8 +227,8 @@ def pay_delivery():
         error_id = str(uuid.uuid4())
         error_details = {
             "errorId": error_id,
-            "custId": cust_id if 'cust_id' in locals() else None,
-            "orderId": order_id if 'order_id' in locals() else None,
+            "custId": data['custId'] if 'data' in locals() else None,
+            "orderId": data['orderId'] if 'data' in locals() else None,
             "message": str(e)
         }
 
@@ -227,7 +244,7 @@ def pay_delivery():
             "code": 500,
             "message": f"An error occurred while processing the payment: {str(e)}"
         }), 500
-    
+     
 @app.route("/user-profile/<user_id>", methods=['GET'])
 def get_user_profile(user_id):
     try:

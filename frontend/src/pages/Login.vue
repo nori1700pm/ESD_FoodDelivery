@@ -77,7 +77,13 @@ const handleSubmit = async () => {
     error.value = null
     
     await auth.login(email.value, password.value)
-    router.push('/restaurants') // Redirect to restaurants list page
+    
+    // Redirect based on email domain
+    if (email.value.endsWith('@driver.com')) {
+      router.push('/activeOrder') // Redirect to active orders page for drivers
+    } else {
+      router.push('/restaurants') // Redirect to restaurants list page for customers
+    }
   } catch (err) {
     console.error('Login failed:', err)
     error.value = 'Invalid email or password'

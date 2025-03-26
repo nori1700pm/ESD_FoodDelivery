@@ -21,6 +21,7 @@ PORT = int(os.environ.get('PORT', 5004))
 order_URL = environ.get('orderURL') or 'http://localhost:5001'
 wallet_URL = environ.get('walletURL') or 'http://localhost:5002'
 error_URL = environ.get('errorURL') or 'http://localhost:5003'
+customer_URL = environ.get('customerURL') or 'http://localhost:4000'
 
 @app.route("/create-order", methods=['POST', 'OPTIONS'])
 def create_order():
@@ -251,8 +252,8 @@ def get_user_profile(user_id):
         print(f'\n-----Fetching profile for user: {user_id}-----')
         
         # Get user profile from wallet service
-        wallet_response = invoke_http(
-            f"{wallet_URL}/users/{user_id}",
+        customer_response = invoke_http(
+            f"{customer_URL}/customers/{user_id}",
             method='GET'
         )
         
@@ -262,22 +263,22 @@ def get_user_profile(user_id):
             method='GET'
         )
         
-        print('Wallet service responses:', wallet_response, balance_response)
+        print('Wallet service responses:', customer_response, balance_response)
         
-        if isinstance(wallet_response, dict):
-            if wallet_response.get('error'):
+        if isinstance(customer_response, dict):
+            if customer_response.get('error'):
                 return jsonify({
                     "code": 404,
-                    "message": wallet_response['error']
+                    "message": customer_response['error']
                 }), 404
             
             # Pass through ALL fields from wallet service
             response_data = {
                 "uid": user_id,
-                "address": wallet_response.get('address', ''),
-                "name": wallet_response.get('name', ''),
-                "email": wallet_response.get('email', ''),
-                "phone": wallet_response.get('phone', ''),
+                "address": customer_response.get('address', ''),
+                "name": customer_response.get('name', ''),
+                "email": customer_response.get('email', ''),
+                "phone": customer_response.get('phone', ''),
                 "balance": balance_response.get('balance', 0.0)
             }
             

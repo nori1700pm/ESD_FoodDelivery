@@ -190,45 +190,45 @@ def update_wallet(customer_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-@app.route('/users/<user_id>', methods=['GET'])
-def get_user_profile(user_id):
-    try:
-        print(f"Fetching profile for user ID: {user_id}")
+# @app.route('/users/<user_id>', methods=['GET'])
+# def get_user_profile(user_id):
+#     try:
+#         print(f"Fetching profile for user ID: {user_id}")
         
-        # Get user document from Firestore
-        user_ref = db.collection('users').document(user_id)
-        user = user_ref.get()
+#         # Get user document from Firestore
+#         user_ref = db.collection('users').document(user_id)
+#         user = user_ref.get()
         
-        print(f"Firebase response - Document exists: {user.exists}")
+#         print(f"Firebase response - Document exists: {user.exists}")
         
-        if not user.exists:
-            error_response = {
-                'error': 'User not found',
-                'user_id': user_id
-            }
-            print(f"User not found response: {error_response}")
-            return jsonify(error_response), 404
+#         if not user.exists:
+#             error_response = {
+#                 'error': 'User not found',
+#                 'user_id': user_id
+#             }
+#             print(f"User not found response: {error_response}")
+#             return jsonify(error_response), 404
             
-        user_data = user.to_dict()
-        print(f"Raw user data from Firebase:", user_data)
+#         user_data = user.to_dict()
+#         print(f"Raw user data from Firebase:", user_data)
         
-        # Make sure we're returning ALL fields from Firestore
-        response_data = {
-            'uid': user_id,
-            'address': user_data.get('address', ''),
-            'name': user_data.get('name', ''),
-            'email': user_data.get('email', ''),
-            'phone': user_data.get('phone', '')  # Also include phone
-        }
+#         # Make sure we're returning ALL fields from Firestore
+#         response_data = {
+#             'uid': user_id,
+#             'address': user_data.get('address', ''),
+#             'name': user_data.get('name', ''),
+#             'email': user_data.get('email', ''),
+#             'phone': user_data.get('phone', '')  # Also include phone
+#         }
         
-        print(f"Sending response from wallet service:", response_data)
-        return jsonify(response_data), 200
+#         print(f"Sending response from wallet service:", response_data)
+#         return jsonify(response_data), 200
         
-    except Exception as e:
-        error_msg = f"Error fetching user profile: {str(e)}"
-        print(error_msg)
-        print(f"Stack trace: {traceback.format_exc()}")
-        return jsonify({'error': error_msg}), 500
+#     except Exception as e:
+#         error_msg = f"Error fetching user profile: {str(e)}"
+#         print(error_msg)
+#         print(f"Stack trace: {traceback.format_exc()}")
+#         return jsonify({'error': error_msg}), 500
     
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=PORT)

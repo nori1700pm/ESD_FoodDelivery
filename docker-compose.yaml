@@ -27,6 +27,7 @@ services:
       - orderURL=http://order-service:5001
       - walletURL=http://wallet-service:5002
       - errorURL=http://error-service:5003
+      - customerURL=http://customer-service:4000
       - PORT=5004
     networks:
       - app-network

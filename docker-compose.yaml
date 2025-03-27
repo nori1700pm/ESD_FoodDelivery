@@ -121,6 +121,32 @@ services:
     depends_on:
       - rabbitmq
 
+  deliver-food:
+    build: 
+      context: ./backend/services/deliver-food
+      dockerfile: Dockerfile
+    ports:
+      - "5005:5005"
+    environment:
+      - DEBUG=false
+      - PORT=5005
+      - FIREBASE_CONFIG=${FIREBASE_CONFIG}
+      - orderURL=http://order-service:5001
+      - walletURL=http://wallet-service:5002
+      - customerURL=http://customer-service:4000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - order-service
+      - wallet-service
+      - customer-service
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:

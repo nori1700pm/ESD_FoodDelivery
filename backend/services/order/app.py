@@ -41,24 +41,29 @@ def get_orders():
         customer_id = request.args.get('customerId')
         print(f"Requesting orders for customer ID: {customer_id}")
         
+        def convert_timestamps(order_dict):
+            for key, value in order_dict.items():
+                if isinstance(value, datetime):
+                    order_dict[key] = value.isoformat()
+            return order_dict
+        
         if customer_id:
             orders_ref = db.collection('orders')
             query = orders_ref.where('customerId', '==', customer_id)
-            orders = [doc.to_dict() | {'id': doc.id} for doc in query.stream()]
+            orders = [convert_timestamps(doc.to_dict()) | {'id': doc.id} for doc in query.stream()]
             print(f"Found {len(orders)} orders for customer")
             print("Orders:", json.dumps(orders, indent=2))
         else:
             orders_ref = db.collection('orders')
             print("No customer ID provided, fetching all orders")
-            orders = [doc.to_dict() | {'id': doc.id} for doc in orders_ref.stream()]
+            orders = [convert_timestamps(doc.to_dict()) | {'id': doc.id} for doc in orders_ref.stream()]
             print(f"Found {len(orders)} total orders")
         
         return jsonify(orders)
     except Exception as e:
         print(f"Error in get_orders: {str(e)}")
-        # print(f"Stack trace:\n{traceback.format_exc()}") as this is optional unless you need full stack trace
         return jsonify({'error': str(e)}), 500
-
+    
 @app.route('/orders/<order_id>', methods=['GET'])
 def get_order(order_id):
     """Get a specific order by ID"""
@@ -74,12 +79,17 @@ def get_order(order_id):
         order_data = order.to_dict()
         order_data['orderId'] = order.id  # Make sure orderId is included
         
+        # Convert Firestore timestamps to ISO format strings
+        for key, value in order_data.items():
+            if isinstance(value, datetime):
+                order_data[key] = value.isoformat()
+                
         print(f"Found order: {json.dumps(order_data, indent=2)}")  # Debug log
         return jsonify(order_data)
     except Exception as e:
         print(f"Error getting order: {str(e)}")  # Debug log
         return jsonify({'error': str(e)}), 500
-
+    
 @app.route('/orders', methods=['POST'])
 def create_order():
     try:

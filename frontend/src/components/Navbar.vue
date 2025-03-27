@@ -8,25 +8,46 @@
           </router-link>
           
           <div v-if="user" class="flex items-center space-x-4">
-            <router-link to="/restaurants" class="hover:text-blue-600">
-              Restaurants
-            </router-link>
+            <div class="md:flex md:items-center space-x-4">
+              <!-- Show different nav links for drivers -->
+              <template v-if="isDriver">
+                <router-link to="/activeOrder" class="text-gray-800 hover:text-blue-600 px-3 py-2">
+                  Active Delivery
+                </router-link>
+                <router-link to="/driver-orders" class="text-gray-800 hover:text-blue-600 px-3 py-2">
+                  Delivery History
+                </router-link>
+              </template>
+              
+              <!-- Regular customer navigation -->
+              <template v-else>
+                <router-link to="/restaurants" class="text-gray-800 hover:text-blue-600 px-3 py-2">
+                  Restaurants
+                </router-link>
+                <router-link v-if="user" to="/orders" class="text-gray-800 hover:text-blue-600 px-3 py-2">
+                  Orders
+                </router-link>
+              </template>
+            </div>
             
             <div v-if="loading">Loading...</div>
             <template v-else>
-              <router-link to="/cart" class="relative">
-                <vue-feather type="shopping-cart" size="24"></vue-feather>
-                <span 
-                  v-if="items.length > 0" 
-                  class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                >
-                  {{ items.length }}
-                </span>
-              </router-link>
-              
-              <router-link to="/wallet">
-                <vue-feather type="credit-card" size="24"></vue-feather>
-              </router-link>
+              <!-- Show cart and wallet only for customers, not drivers -->
+              <template v-if="!isDriver">
+                <router-link to="/cart" class="relative">
+                  <vue-feather type="shopping-cart" size="24"></vue-feather>
+                  <span 
+                    v-if="items.length > 0" 
+                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                  >
+                    {{ items.length }}
+                  </span>
+                </router-link>
+                
+                <router-link to="/wallet">
+                  <vue-feather type="credit-card" size="24"></vue-feather>
+                </router-link>
+              </template>
               
               <div class="relative">
                 <button 
@@ -44,20 +65,45 @@
                   ref="menuRef"
                   class="absolute right-0 w-48 mt-2 bg-white rounded-md shadow-lg z-10"
                 >
-                  <router-link 
-                    to="/profile" 
-                    class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
-                    @click="handleMenuItemClick"
-                  >
-                    Profile
-                  </router-link>
-                  <router-link 
-                    to="/orders" 
-                    class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
-                    @click="handleMenuItemClick"
-                  >
-                    My Orders
-                  </router-link>
+                  <template v-if="isDriver">
+                    <router-link
+                      to="/activeOrder"
+                      class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      @click="handleMenuItemClick"
+                    >
+                      Active Delivery
+                    </router-link>
+                    <router-link
+                      to="/driver-orders"
+                      class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      @click="handleMenuItemClick"
+                    >
+                      Delivery History
+                    </router-link>
+                  </template>
+                  <template v-else>
+                    <router-link
+                      to="/profile"
+                      class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      @click="handleMenuItemClick"
+                    >
+                      My Profile
+                    </router-link>
+                    <router-link
+                      to="/orders"
+                      class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      @click="handleMenuItemClick"
+                    >
+                      My Orders
+                    </router-link>
+                    <router-link
+                      to="/wallet"
+                      class="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                      @click="handleMenuItemClick"
+                    >
+                      My Wallet
+                    </router-link>
+                  </template>
                   <button
                     @click="handleLogout"
                     class="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
@@ -75,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useCartStore } from '../stores/cart'
 import VueFeather from 'vue-feather'
@@ -126,6 +172,10 @@ const handleClickOutside = (event) => {
     isMenuOpen.value = false
   }
 }
+
+const isDriver = computed(() => {
+  return user.value && user.value.email && user.value.email.endsWith('@driver.com')
+})
 
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)

@@ -83,7 +83,13 @@ const routes = [
     path: '/activeOrder',
     name: 'ActiveOrder',
     component: ActiveOrder,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresDriver: true }
+  },
+  {
+    path: '/driver-orders',
+    name: 'DriverOrders',
+    component: () => import('../pages/DriverOrders.vue'),
+    meta: { requiresAuth: true, requiresDriver: true, title: 'Delivery History' }
   }
 ]
 
@@ -94,18 +100,17 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
-
-  if (to.meta.requiresAuth && !auth.user && !auth.loading) {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresDriver = to.matched.some(record => record.meta.requiresDriver)
+  
+  if (requiresAuth && !auth.user) {
     next('/login')
-  } else if (to.path === '/logout') {
-    auth.logout().then(() => {
-      next('/login')
-    })
+  } else if (requiresDriver && auth.user && !auth.user.email.endsWith('@driver.com')) {
+    // Redirect non-drivers away from driver pages
+    next('/')
   } else {
     next()
   }
-},
-)
-
+})
 
 export default router

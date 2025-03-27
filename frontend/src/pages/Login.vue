@@ -1,30 +1,55 @@
 <template>
-  <div class="max-w-md mx-auto mt-10">
-    <h1 class="text-2xl font-bold mb-6 text-center">Log In</h1>
+  <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold mb-6 text-center">Login to Your Account</h1>
     
-    <div v-if="error" class="bg-red-100 text-red-700 p-3 rounded-lg mb-4">
+    <!-- Login type selection -->
+    <div class="flex mb-6">
+      <button 
+        @click="loginType = 'customer'" 
+        :class="[
+          'flex-1 py-2 border-b-2 text-center',
+          loginType === 'customer' 
+            ? 'border-blue-500 text-blue-600 font-medium' 
+            : 'border-gray-200 text-gray-500'
+        ]"
+      >
+        Customer
+      </button>
+      <button 
+        @click="loginType = 'driver'" 
+        :class="[
+          'flex-1 py-2 border-b-2 text-center',
+          loginType === 'driver' 
+            ? 'border-blue-500 text-blue-600 font-medium' 
+            : 'border-gray-200 text-gray-500'
+        ]"
+      >
+        Driver
+      </button>
+    </div>
+    
+    <div v-if="error" class="bg-red-100 text-red-700 p-3 rounded-md mb-4">
       {{ error }}
     </div>
     
-    <form @submit.prevent="handleSubmit" class="space-y-4">
-      <div>
+    <form @submit.prevent="handleSubmit">
+      <div class="mb-4">
         <label for="email" class="block mb-1 text-gray-700">Email</label>
         <input
           id="email"
           type="email"
           v-model="email"
           class="w-full p-3 border border-gray-300 rounded-md"
-          placeholder="Email"
+          :placeholder="loginType === 'driver' ? 'driver@driver.com' : 'customer@example.com'"
         />
       </div>
       
-      <div>
+      <div class="mb-6">
         <label for="password" class="block mb-1 text-gray-700">Password</label>
         <input
           id="password"
           type="password"
           v-model="password"
-          placeholder="Password"
           class="w-full p-3 border border-gray-300 rounded-md"
         />
       </div>
@@ -34,22 +59,27 @@
         :disabled="loading"
         class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
       >
-        {{ loading ? 'Logging in...' : 'Login' }}
+        {{ loading ? 'Signing in...' : loginType === 'driver' ? 'Login as Driver' : 'Login as Customer' }}
       </button>
     </form>
+    
+    <!-- Demo login credentials hint -->
+    <div class="mt-4 p-3 bg-gray-50 rounded-md text-sm text-gray-600">
+      <p class="font-semibold">Demo Credentials:</p>
+      <p v-if="loginType === 'customer'">
+        <span class="font-medium">Customer:</span> customer1@example.com / password123
+      </p>
+      <p v-else>
+        <span class="font-medium">Driver:</span> jewel@driver.com / 123123
+      </p>
+    </div>
     
     <p class="mt-4 text-center text-gray-600">
       Don't have an account?
       <router-link to="/register" class="text-blue-600 hover:underline">
-        Sign Up
+        Register
       </router-link>
     </p>
-    
-    <div class="mt-6 text-center">
-      <p class="text-gray-600 text-sm">
-        Test account: customer1@example.com / password123
-      </p>
-    </div>
   </div>
 </template>
 
@@ -65,6 +95,7 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const error = ref(null)
+const loginType = ref('customer')
 
 const handleSubmit = async () => {
   if (!email.value || !password.value) {
@@ -75,6 +106,11 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     error.value = null
+    
+    // Ensure driver emails have @driver.com suffix for driver login
+    if (loginType.value === 'driver' && !email.value.endsWith('@driver.com')) {
+      email.value = `${email.value.split('@')[0]}@driver.com`
+    }
     
     await auth.login(email.value, password.value)
     

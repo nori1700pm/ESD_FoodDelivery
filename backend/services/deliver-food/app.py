@@ -43,23 +43,7 @@ def cancel_order(order_id):
                 "message": f"Order {order_id} not found."
             }), 404
 
-        # Step 2: Update order status to Failed
-        update_result = invoke_http(
-            f"{ORDER_URL}/orders/{order_id}/status",
-            method="PATCH",
-            json={
-                "status": "Failed",
-                "deliveryStatus": "Failed"
-            }
-        )
-        
-        if 'error' in update_result:
-            return jsonify({
-                "code": 500,
-                "message": f"Failed to update order status: {update_result['error']}"
-            }), 500
-
-        # Step 3: Process refund to customer's wallet
+        # Step 2: Process refund to customer's wallet
         customer_id = order_result.get('customerId')
         order_amount = float(order_result.get('price', 0))
         
@@ -91,11 +75,16 @@ def cancel_order(order_id):
                 "message": f"Failed to process refund: {refund_result['error']}"
             }), 500
 
-        # Step 4: Final update of order status to Cancelled
+        # Step 3: Update order status to cancelled and payment status to refunded
         final_update = invoke_http(
-            f"{ORDER_URL}/orders/{order_id}/status",
-            method="PATCH",
-            json={"status": "Cancelled"}
+            f"{ORDER_URL}/orders/{order_id}",
+            method="PUT",
+            json={
+                **order_result,  # Include all existing order data
+                "status": "CANCELLED",
+                "paymentStatus": "REFUNDED",
+                "updatedAt": "2025-03-27 08:47:09"  # Current UTC time
+            }
         )
 
         return jsonify({

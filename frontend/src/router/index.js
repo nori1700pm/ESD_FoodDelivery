@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-
+import { watch } from 'vue' 
 // Page components
 import Home from '../pages/Home.vue'
 import Login from '../pages/Login.vue'
@@ -98,19 +98,30 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresDriver = to.matched.some(record => record.meta.requiresDriver)
   
+  // Wait for auth to initialize
+  if (auth.loading) {
+    // Wait for the auth state to be ready
+    await new Promise(resolve => {
+      const unsubscribe = watch(() => auth.loading, (loading) => {
+        if (!loading) {
+          unsubscribe()
+          resolve()
+        }
+      })
+    })
+  }
+  
   if (requiresAuth && !auth.user) {
     next('/login')
   } else if (requiresDriver && auth.user && !auth.user.email.endsWith('@driver.com')) {
-    // Redirect non-drivers away from driver pages
     next('/')
   } else {
     next()
   }
 })
-
 export default router

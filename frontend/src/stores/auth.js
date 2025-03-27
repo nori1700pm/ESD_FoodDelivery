@@ -4,19 +4,26 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged 
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence  
 } from 'firebase/auth'
 import { auth } from '../config/firebase'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const loading = ref(true)
-
-  onAuthStateChanged(auth, (userData) => {
-    user.value = userData
-    loading.value = false
-  })
-
+  setPersistence(auth, browserLocalPersistence)
+    .then(() => {
+      onAuthStateChanged(auth, (userData) => {
+        user.value = userData
+        loading.value = false
+      })
+    })
+    .catch((error) => {
+      console.error("Persistence setup failed:", error)
+      loading.value = false
+    })
   const login = async (email, password) => {
     return signInWithEmailAndPassword(auth, email, password)
   }

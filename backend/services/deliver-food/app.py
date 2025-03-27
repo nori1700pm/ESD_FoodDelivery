@@ -20,6 +20,7 @@ db = firestore.client()
 ORDER_URL = os.environ.get('orderURL') or "http://order-service:5001"
 WALLET_URL = os.environ.get('walletURL') or "http://wallet-service:5002"
 CUSTOMER_URL = os.environ.get('customerURL') or "http://customer-service:4000"
+NOTIFICATION_URL = os.environ.get('notificationURL') or "http://notification-service:6000"
 
 @app.route("/health")
 def health_check():
@@ -87,13 +88,48 @@ def cancel_order(order_id):
             }
         )
 
-        return jsonify({
-            "code": 200,
-            "data": {
-                "order_status": final_update,
-                "refund_status": refund_result
+        # Step 4: Get customer details for notification
+        customer_result = invoke_http(
+            f"{CUSTOMER_URL}/customers/{customer_id}",
+            method="GET"
+        )
+
+        if 'error' not in customer_result:
+            # Send notification
+            notification_data = {
+                "recipient": customer_result.get('email'),
+                "subject": "Order Cancelled and Refund Processed",
+                "message": f"""
+                Your order #{order_id} has been cancelled.
+                A refund of ${order_amount:.2f} has been processed to your wallet.
+                Your new wallet balance is ${new_balance:.2f}.
+                """
             }
-        })
+
+            notification_result = invoke_http(
+                f"{NOTIFICATION_URL}/send_email",
+                method="POST",
+                json=notification_data
+            )
+
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "order_status": final_update,
+                    "refund_status": refund_result,
+                    "notification_status": notification_result
+                }
+            })
+        else:
+            # Return success even if notification fails
+            return jsonify({
+                "code": 200,
+                "data": {
+                    "order_status": final_update,
+                    "refund_status": refund_result,
+                    "notification_status": "Failed to send notification"
+                }
+            })
 
     except Exception as e:
         return jsonify({

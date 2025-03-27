@@ -93,9 +93,13 @@ def cancel_order(order_id):
 
         # Step 4: Final update of order status to Cancelled
         final_update = invoke_http(
-            f"{ORDER_URL}/orders/{order_id}/status",
-            method="PATCH",
-            json={"status": "Cancelled"}
+            f"{ORDER_URL}/orders/{order_id}",
+            method="PUT",
+            json={
+                "status": "Cancelled",
+                "paymentStatus": "REFUNDED",
+                "updatedAt": "2025-03-27 08:27:35"  # Current UTC time
+            }
         )
 
         return jsonify({

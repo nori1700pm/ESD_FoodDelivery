@@ -40,25 +40,37 @@
 
             <!-- Status badges -->
             <div class="flex flex-col gap-2">
-              <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.driverStatus)}`">
-                Driver: {{ order.driverStatus }}
-              </div>
-              <div v-if="order.driverStatus === 'ASSIGNED' || order.paymentStatus !== 'PENDING'"
-                class="flex items-center gap-2">
-                <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.paymentStatus)}`">
-                  Payment: {{ order.paymentStatus }}
-                </div>
+              <!-- Debug output -->
+              <!-- <div class="text-xs text-gray-500">
+                {{ order.status }}
+              </div> -->
 
-                <!-- Show Pay button only if driver is assigned and payment is pending -->
-                <button 
-                  v-if="order.driverStatus === 'ASSIGNED' && order.paymentStatus !== 'PAID'"
-                  @click="handlePayment(order)"
-                  :disabled="loading"
-                  class="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-1 rounded-full text-sm flex items-center gap-2">
-                  <span v-if="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                  {{ loading ? 'Processing...' : 'Pay' }}
-                </button>
+              <!-- Show only Cancelled status if order is cancelled -->
+              <div v-if="order.status === 'Cancelled' || order.status === 'CANCELLED' || order.status === 'cancelled'"
+                class="px-3 py-1 rounded-full bg-red-100 text-red-800">
+                Cancelled
               </div>
+              <!-- Show driver and payment status for non-cancelled orders -->
+              <template v-else>
+                <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.driverStatus)}`">
+                  Driver: {{ order.driverStatus }}
+                </div>
+                <div v-if="order.driverStatus === 'ASSIGNED' || order.paymentStatus !== 'PENDING'"
+                  class="flex items-center gap-2">
+                  <div :class="`px-3 py-1 rounded-full ${getStatusColor(order.paymentStatus)}`">
+                    Payment: {{ order.paymentStatus }}
+                  </div>
+
+                  <!-- Show Pay button only if driver is assigned and payment is pending -->
+                  <button v-if="order.driverStatus === 'ASSIGNED' && order.paymentStatus !== 'PAID'"
+                    @click="handlePayment(order)" :disabled="loading"
+                    class="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-1 rounded-full text-sm flex items-center gap-2">
+                    <span v-if="loading"
+                      class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                    {{ loading ? 'Processing...' : 'Pay' }}
+                  </button>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -94,7 +106,7 @@ import { db } from '../config/firebase'
 import { useAuthStore } from '../stores/auth'
 import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
-import axios from 'axios' 
+import axios from 'axios'
 
 const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5004'
 
@@ -144,7 +156,7 @@ const fetchOrders = async () => {
 
     const response = await axios.get(`${ORDER_SERVICE_URL}/orders?customerId=${user.value.uid}`);
     console.log('Raw orders response:', response.data);
-        
+
     if (response.data && Array.isArray(response.data)) {
       orders.value = response.data.map(order => {
         const orderId = order.orderId;  // This is what's saved in Firestore
@@ -288,7 +300,7 @@ const handlePayment = async (order) => {
 
     const paymentPayload = {
       custId: user.value.uid,
-      orderId: order.orderId 
+      orderId: order.orderId
     };
 
     console.log('Payment payload:', paymentPayload);  // Debug log to see what's being sent
@@ -312,7 +324,7 @@ const handlePayment = async (order) => {
     }
   } catch (err) {
     console.error('Payment error:', err);
-    
+
     let errorMessage;
     if (err.response?.data?.message) {
       errorMessage = err.response.data.message;

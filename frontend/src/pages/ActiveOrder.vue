@@ -3,7 +3,6 @@
         <h1 class="text-3xl font-bold mb-6 flex items-center">
             <vue-feather type="truck" size="28" class="mr-2" /> Driver Dashboard
         </h1>
-        
         <!-- Loading state -->
         <div v-if="loading" class="flex justify-center items-center h-64">
             <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -30,7 +29,7 @@
                     <h2 class="text-xl font-bold mb-1">{{ activeOrder.restaurantName || "Restaurant" }}</h2>
                     <div class="flex items-center text-blue-600">
                         <vue-feather type="map-pin" size="16" class="mr-2" />
-                        <p>Restaurant #{{ activeOrder.restaurantId }}</p>
+                        <p>{{ restaurantDetails.address }}</p>
                     </div>
                 </div>
                 

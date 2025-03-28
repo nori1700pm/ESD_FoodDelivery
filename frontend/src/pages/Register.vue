@@ -8,6 +8,18 @@
     
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
+        <label for="userType" class="block mb-1 text-gray-700">Register as</label>
+        <select
+          id="userType"
+          v-model="userType"
+          class="w-full p-3 border border-gray-300 rounded-md"
+        >
+          <option value="customer">Customer</option>
+          <option value="driver">Driver</option>
+        </select>
+      </div>
+
+      <div>
         <label for="name" class="block mb-1 text-gray-700">Full Name</label>
         <input
           id="name"
@@ -47,7 +59,7 @@
         />
       </div>
       
-      <div>
+      <div v-if="userType === 'customer'">
         <label for="address" class="block mb-1 text-gray-700">Delivery Address</label>
         <textarea
           id="address"
@@ -55,6 +67,10 @@
           class="w-full p-3 border border-gray-300 rounded-md"
           rows="3"
         ></textarea>
+      </div>
+
+      <div v-if="userType === 'driver'">
+        <!-- Removed driverLocation input field -->
       </div>
       
       <button
@@ -78,7 +94,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios' // Import axios for API calls
+import axios from 'axios'
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 
 const router = useRouter()
 
@@ -87,11 +104,15 @@ const password = ref('')
 const name = ref('')
 const phone = ref('')
 const address = ref('')
-const loading = ref(false)
+const driverLocation = ref('Somewhere') // Default driver location
+const userType = ref('customer') // Default to 'customer'
+const driverStatus = ref('Busy') // Default driver status
 const error = ref(null)
+const loading = ref(false)
 
 const handleSubmit = async () => {
-  if (!email.value || !password.value || !name.value || !phone.value || !address.value) {
+  if (!email.value || !password.value || !name.value || !phone.value || 
+      (userType.value === 'customer' && !address.value)) {
     error.value = 'Please fill in all fields'
     return
   }
@@ -99,18 +120,42 @@ const handleSubmit = async () => {
   try {
     loading.value = true
     error.value = null
-    
-    // Call the backend API to register the user
-    const response = await axios.post('http://localhost:4000/customers', {
-      email: email.value,
-      password: password.value,
-      name: name.value,
-      phone: phone.value,
-      address: address.value
-    })
-    
-    console.log("User registration complete:", response.data)
-    router.push('/')
+
+    const auth = getAuth()
+
+    if (userType.value === 'customer') {
+
+      const response = await axios.post('http://localhost:4000/customers', {
+        name: name.value,
+        email: email.value,
+        phone: phone.value,
+        password: password.value,
+        address: address.value
+      })
+      console.log("Customer registration complete:", response.data)
+      router.push('/')
+    } else if (userType.value === 'driver') {
+      // Create Firebase Auth record for driver
+      await createUserWithEmailAndPassword(auth, email.value, password.value)
+
+      try {
+        // Call the OutSystems API for driver registration with correct field names
+        const response = await axios.post('https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/createDriver', {
+          DriverName: name.value, 
+          DriverStatus: driverStatus.value, 
+          DriverNumber: phone.value, 
+          DriverLocation: driverLocation.value, 
+          DriverEmail: email.value 
+        })
+        console.log("Driver registration complete in OutSystems:", response.data)
+      } catch (outsystemsError) {
+        console.error("OutSystems API error:", outsystemsError.response?.data || outsystemsError.message)
+        error.value = "Failed to save driver in OutSystems. Please contact support."
+        return
+      }
+
+      router.push('/activeorder') // Redirect drivers to activeorder.vue
+    }
   } catch (err) {
     console.error('Registration failed:', err)
     error.value = err.response?.data?.message || 'Failed to register. Please try again.'

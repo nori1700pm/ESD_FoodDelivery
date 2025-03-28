@@ -26,7 +26,7 @@ def create_customer():
             return jsonify({"error": "Request body is required"}), 400
         
         # Validate required fields
-        required_fields = ['address', 'name', 'email', 'password', 'phone']
+        required_fields = ['address', 'name', 'email', 'phone', 'password'] 
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f"Missing required field: {field}"}), 400
@@ -118,4 +118,3 @@ def health_check():
 # Run the application
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=4000, debug=True)
-

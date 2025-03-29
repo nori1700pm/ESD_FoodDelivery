@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-import amqp_lib
+import rabbitmq.amqp_lib as amqp_lib
 import json
 import firebase_admin
 from firebase_admin import credentials

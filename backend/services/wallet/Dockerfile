@@ -3,18 +3,19 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy requirements and install dependencies
-COPY requirements.txt .
+COPY wallet/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY app.py .
+# Correct path to wallet/app.py and rabbitmq directory
+COPY wallet /app/wallet
+COPY rabbitmq /app/rabbitmq
 
 # Expose the port
 EXPOSE 5002
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:5002/health || exit 1
 
-# Run the app with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5002", "app:app"]
+# Run with Gunicorn using module path
+CMD ["gunicorn", "--bind", "0.0.0.0:5002", "wallet.app:app"]

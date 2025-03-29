@@ -155,6 +155,7 @@ def pay_delivery():
 
         if wallet_result.get('error'):
             # Payment failed - return error message
+            print("Returning response:", wallet_result)
             return jsonify({
                 "code": 400,
                 "message": "Insufficient balance",

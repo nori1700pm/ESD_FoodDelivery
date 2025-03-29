@@ -3,8 +3,8 @@ version: '3.8'
 services:
   error-service:
     build: 
-      context: ./backend/services/error
-      dockerfile: Dockerfile
+      context: ./backend/services
+      dockerfile: error/Dockerfile
     ports:
       - "5003:5003"
     environment:
@@ -12,6 +12,7 @@ services:
       - RABBITMQ_PORT=5672
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
       - PORT=5003
+      - PYTHONPATH=/app
     networks:
       - app-network
     depends_on:
@@ -37,8 +38,8 @@ services:
 
   wallet-service:
     build: 
-      context: ./backend/services/wallet
-      dockerfile: Dockerfile
+      context: ./backend/services
+      dockerfile: wallet/Dockerfile
     ports:
       - "5002:5002"
     environment:
@@ -46,6 +47,8 @@ services:
       - PORT=5002
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
       - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672 
+      - PYTHONPATH=/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
       interval: 30s
@@ -78,7 +81,7 @@ services:
 
   notification-service:
     build:
-      context: ./backend/services/
+      context: ./backend/services
       dockerfile: notifications/Dockerfile
     environment:
       - DEBUG=false
@@ -163,6 +166,25 @@ services:
       timeout: 10s
       retries: 3
 
+  rabbitmq-init:
+    build:
+      context: ./backend/services/rabbitmq
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+    networks:
+      - app-network
+    command: ["python", "amqp_setup.py"]
+
+
 networks:
   app-network:
     driver: bridge
+  

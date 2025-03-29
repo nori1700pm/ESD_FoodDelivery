@@ -6,6 +6,9 @@ import pika
 import uuid
 from flask_cors import CORS
 import traceback  
+import rabbitmq.amqp_lib as amqp_lib
+import rabbitmq.amqp_setup 
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -16,35 +19,39 @@ firebase_config_dict = json.loads(firebase_config)
 cred = credentials.Certificate(firebase_config_dict)
 initialize_app(cred)
 db = firestore.client()
-PORT = int(os.environ.get('PORT', 5002))
+RABBITMQ_PORT = int(os.environ.get('RABBITMQ_PORT', 5672))
 RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
+PORT = int(os.environ.get('PORT', 5002)) 
+
+exchange_name = "order_topic"
+exchange_type = "topic"
+queue_name = "error_queue"  # Changed from "Error" to be consistent
 
 # RabbitMQ setup
 def send_error_to_queue(error_details):
     try:
-        # RabbitMQ connection parameters
-        credentials = pika.PlainCredentials('guest', 'guest')  # Update with your credentials
-        parameters = pika.ConnectionParameters('rabbitmq', 5672, '/', credentials)
-        connection = pika.BlockingConnection(parameters)
-        channel = connection.channel()
+        print("  Connecting to AMQP broker...")
+        connection, channel = amqp_lib.connect(
+            hostname=RABBITMQ_HOST,
+            port=RABBITMQ_PORT,
+            exchange_name='order_topic',
+            exchange_type='topic',
+        )
 
-        # Declare the error queue
-        channel.queue_declare(queue='error_queue', durable=True)
-
-        # Send error message
+        print("  Publishing error message to queue...")
         channel.basic_publish(
-            exchange='',
-            routing_key='error_queue',
+            exchange='order_topic',
+            routing_key='wallet.payment.error',
             body=json.dumps(error_details),
-            properties=pika.BasicProperties(
-                delivery_mode=2  # Make message persistent
-            )
+            properties=pika.BasicProperties(delivery_mode=2)
         )
 
         connection.close()
+        print("  Error message sent successfully ✅")
         return True
+
     except Exception as e:
-        print(f"Error sending to queue: {str(e)}")
+        print(f"  ❌ Failed to send error to queue: {str(e)}")
         return False
 
 @app.route('/health', methods=['GET'])
@@ -100,6 +107,7 @@ def process_payment(customer_id):
                 'orderId': order_id,
                 'message': 'Insufficient balance'
             }
+            print("Attempting sending error to queue")
             send_error_to_queue(error_details)
             return jsonify({
                 'error': 'Insufficient balance',

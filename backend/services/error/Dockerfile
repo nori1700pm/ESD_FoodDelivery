@@ -9,12 +9,13 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
-COPY requirements.txt .
+COPY error/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy both Python files
-COPY amqp_lib.py .
-COPY app.py .
+# Copy error service and shared rabbitmq code
+COPY error /app/error
+COPY rabbitmq /app/rabbitmq
+
 
 # Run the consumer directly with Python
-CMD ["python", "app.py"]
+CMD ["python", "error/app.py"]

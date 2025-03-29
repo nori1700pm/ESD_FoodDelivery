@@ -1,6 +1,6 @@
 import os
 import json
-from error import amqp_lib
+import rabbitmq.amqp_lib as amqp_lib
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 

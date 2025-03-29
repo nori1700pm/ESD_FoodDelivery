@@ -17,7 +17,7 @@ def callback(channel, method, properties, body):
         print(f"JSON: {error}")
 
         message = Mail(
-        from_email='chaizheqing2004@gmail.com',
+        from_email='nomnomgodelivery@gmail.com',
         to_emails='chaizheqing2004@gmail.com',
         subject=error['message'],
         html_content='There is insufficient balance in your wallet, please top up!')

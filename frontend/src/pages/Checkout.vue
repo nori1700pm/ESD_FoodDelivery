@@ -237,7 +237,7 @@ const handleSubmit = async () => {
     }
 
     // Create order ID
-    const orderId = `order-${Date.now()}-${user.value.uid.slice(0, 8)}`
+    const orderId = `${Date.now()}`
 
     // First, process the payment
     const paymentPayload = {
@@ -272,6 +272,20 @@ const handleSubmit = async () => {
         }
       }
     )
+
+    if (paymentResponse.data.code === 207) {
+      // Show warning but continue with success flow
+      console.warn('Driver assignment failed:', paymentResponse.data.message)
+      error.value = 'Order placed successfully, but there was an issue assigning a driver. Our team will handle this shortly.'
+      
+      // Still clear cart and redirect
+      await cart.clearCart()
+      success.value = true
+      setTimeout(() => {
+        router.push('/orders')
+      }, 3000)
+      return
+    }
 
     if (paymentResponse.data.code !== 200) {
       error.value = paymentResponse.data.message || 'Payment failed'

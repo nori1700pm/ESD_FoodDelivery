@@ -7,12 +7,12 @@
         <div v-if="loading" class="flex justify-center items-center h-64">
             <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-        
+
         <!-- Error state -->
         <div v-else-if="error" class="bg-red-100 p-4 rounded-lg mb-6 text-red-700">
             {{ error }}
         </div>
-        
+
         <!-- No active orders state -->
         <div v-else-if="!activeOrder" class="bg-yellow-50 p-6 rounded-lg shadow-md text-center">
             <vue-feather type="coffee" size="48" class="mx-auto mb-4 text-yellow-500" />
@@ -20,7 +20,7 @@
             <p class="text-gray-600">You don't have any assigned deliveries at the moment.</p>
             <p class="text-gray-500 mt-2">Please wait for the system to assign you a delivery.</p>
         </div>
-        
+
         <!-- Active order -->
         <div v-else class="bg-white rounded-lg shadow-lg overflow-hidden">
             <!-- Order header with restaurant info -->
@@ -32,24 +32,24 @@
                         <p>{{ restaurantDetails.address }}</p>
                     </div>
                 </div>
-                
+
                 <div :class="`px-3 py-1 rounded-full ${getStatusColor(activeOrder.status)}`">
                     {{ activeOrder.status }}
                 </div>
             </div>
-            
+
             <!-- Restaurant image if available -->
             <div v-if="restaurantImage" class="h-48 overflow-hidden relative">
                 <img :src="restaurantImage" alt="Restaurant Image" class="w-full object-cover">
             </div>
-            
+
             <!-- Customer details section -->
             <div class="p-5 border-b">
                 <h3 class="font-bold mb-3 flex items-center">
                     <vue-feather type="user" size="18" class="mr-2" />
                     Delivery Information
                 </h3>
-                
+
                 <div class="flex items-start mb-4">
                     <vue-feather type="map-pin" size="18" class="mr-3 mt-1 flex-shrink-0" />
                     <div>
@@ -57,7 +57,7 @@
                         <p class="text-gray-700">{{ activeOrder.deliveryAddress }}</p>
                     </div>
                 </div>
-                
+
                 <div class="flex items-start mb-4">
                     <vue-feather type="clock" size="18" class="mr-3 mt-1 flex-shrink-0" />
                     <div>
@@ -65,7 +65,7 @@
                         <p class="text-gray-700">{{ formatDate(activeOrder.createdAt) }}</p>
                     </div>
                 </div>
-                
+
                 <div class="flex items-start">
                     <vue-feather type="hash" size="18" class="mr-3 mt-1 flex-shrink-0" />
                     <div>
@@ -74,7 +74,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Order items -->
             <div class="p-5 border-b">
                 <h3 class="font-bold mb-3">Order Items</h3>
@@ -88,7 +88,7 @@
                     </li>
                 </ul>
             </div>
-            
+
             <!-- Order totals -->
             <div class="p-5 bg-gray-50">
                 <div class="flex justify-between font-bold text-lg">
@@ -96,7 +96,7 @@
                     <span>${{ activeOrder.price.toFixed(2) }}</span>
                 </div>
             </div>
-            
+
             <!-- Customer info -->
             <div class="p-5 border-t">
                 <h3 class="font-bold mb-3 flex items-center">
@@ -110,26 +110,43 @@
                 </div>
                 <div v-else class="italic text-gray-500">Customer information not available</div>
             </div>
-            
+
+            <!-- Delivery actions -->
             <!-- Delivery actions -->
             <div class="p-5 border-t">
                 <h3 class="font-bold mb-3">Delivery Status</h3>
                 <div class="flex space-x-4">
-                    <button 
-                        @click="updateOrderStatus('IN_PROGRESS')" 
-                        class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
-                        :disabled="activeOrder.status !== 'ASSIGNED' && activeOrder.status !== 'PENDING' && activeOrder.status !== 'PAID'"
-                    >
+                    <!-- Start Delivery button - shows when status is PREPARING -->
+                    <button v-if="activeOrder.status === 'PREPARING'" @click="updateOrderStatus('READY FOR PICKUP')"
+                        class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
                         Start Delivery
                     </button>
-                    
-                    <button 
-                        @click="updateOrderStatus('DELIVERED')" 
-                        class="flex-1 bg-green-600 text-white p-3 rounded-md hover:bg-green-700 disabled:bg-green-300"
-                        :disabled="activeOrder.status !== 'IN_PROGRESS'"
-                    >
+
+                    <!-- Reject Delivery button - shows only when status is PREPARING -->
+                    <button v-if="activeOrder.status === 'PREPARING'" @click="rejectDelivery"
+                        class="flex-1 bg-gray-600 text-white p-3 rounded-md hover:bg-gray-700">
+                        Reject Delivery
+                    </button>
+
+                    <!-- Pick Up Order button - shows when status is READY FOR PICKUP -->
+                    <button v-if="activeOrder.status === 'READY FOR PICKUP'"
+                        @click="updateOrderStatus('OUT FOR DELIVERY')"
+                        class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
+                        Picked up order
+                    </button>
+
+                    <!-- Complete Delivery button - shows when status is OUT FOR DELIVERY -->
+                    <button v-if="activeOrder.status === 'OUT FOR DELIVERY'" @click="updateOrderStatus('DELIVERED')"
+                        class="flex-1 bg-green-600 text-white p-3 rounded-md hover:bg-green-700">
                         Complete Delivery
                     </button>
+
+                    <!-- Cancel Delivery button - shows when status is READY FOR PICKUP or OUT FOR DELIVERY -->
+                    <button v-if="['READY FOR PICKUP', 'OUT FOR DELIVERY'].includes(activeOrder.status)"
+                        @click="cancelDelivery" class="flex-1 bg-red-600 text-white p-3 rounded-md hover:bg-red-700">
+                        Cancel Delivery
+                    </button>
+
                 </div>
             </div>
         </div>
@@ -160,6 +177,8 @@ const { user } = storeToRefs(auth)
 const GETDRIVERBYEMAIL_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/drivers/'
 const ORDER_SERVICE_URL = 'http://localhost:5001'
 const CUSTOMER_SERVICE_URL = 'http://localhost:4000'
+const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:5005'
+
 
 const fetchDriverInfo = async (email) => {
     try {
@@ -203,22 +222,22 @@ const processOrders = async () => {
         activeOrder.value = null
         return
     }
-    
+
     // Find the first active order assigned to this driver - non-completed orders
-    const assignedOrder = orders.value.find(order => 
-        order.driverId === driverId.value && 
-        ['ASSIGNED', 'PENDING', 'PAID', 'IN_PROGRESS'].includes(order.status)
+    const assignedOrder = orders.value.find(order =>
+        order.driverId === driverId.value &&
+        !['COMPLETED', 'DELIVERED', 'CANCELLED'].includes(order.status)
     )
-    
+
     if (assignedOrder) {
         console.log('Found assigned order:', assignedOrder)
         activeOrder.value = assignedOrder
-        
+
         // If we have a restaurant ID, fetch its details
         if (assignedOrder.restaurantId) {
             await fetchRestaurantById(assignedOrder.restaurantId)
         }
-        
+
         // Fetch customer information
         if (assignedOrder.customerId) {
             await fetchCustomerInfo(assignedOrder.customerId)
@@ -241,7 +260,7 @@ const fetchRestaurantById = async (restaurantId) => {
         }
 
         restaurantDetails.value = { id: docSnap.id, ...docSnap.data() }
-        restaurantImage.value = restaurantDetails.value.imageUrl 
+        restaurantImage.value = restaurantDetails.value.imageUrl
     } catch (err) {
         console.error("Error fetching restaurant:", err)
     }
@@ -260,24 +279,28 @@ const fetchCustomerInfo = async (customerId) => {
 
 const updateOrderStatus = async (newStatus) => {
     if (!activeOrder.value) return
-    
+
     try {
         loading.value = true
         error.value = null
-        
-        const response = await axios.patch(
+
+        let driverStatusUpdate = 'ASSIGNED' 
+        if (newStatus === 'DELIVERED') {
+            driverStatusUpdate = 'AVAILABLE'
+        }
+        const response = await axios.put(
             `${ORDER_SERVICE_URL}/orders/${activeOrder.value.orderId}/status`,
-            { 
+            {
                 status: newStatus,
-                driverStatus: newStatus
+                driverStatus: driverStatusUpdate
             }
         )
-        
+
         console.log('Order status updated:', response.data)
-        
+
         // Refresh order data
         await fetchAllOrders()
-        
+
     } catch (err) {
         console.error('Error updating order status:', err)
         error.value = `Failed to update order status: ${err.message}`
@@ -286,6 +309,8 @@ const updateOrderStatus = async (newStatus) => {
     }
 }
 
+
+
 const getStatusColor = (status) => {
     switch (status) {
         case 'COMPLETED':
@@ -293,9 +318,10 @@ const getStatusColor = (status) => {
         case 'PAID':
             return 'bg-green-100 text-green-800'
         case 'PENDING':
+        case 'PREPARING':
             return 'bg-yellow-100 text-yellow-800'
-        case 'ASSIGNED':
-        case 'IN_PROGRESS':
+        case 'READY FOR PICKUP':
+        case 'OUT FOR DELIVERY':
             return 'bg-blue-100 text-blue-800'
         case 'CANCELLED':
         case 'PAYMENT_FAILED':
@@ -304,6 +330,7 @@ const getStatusColor = (status) => {
             return 'bg-gray-100 text-gray-800'
     }
 }
+
 
 const formatDate = (timestamp) => {
     try {
@@ -343,6 +370,84 @@ const formatDate = (timestamp) => {
         return 'Unknown date'
     }
 }
+
+const rejectDelivery = async () => {
+    if (!activeOrder.value) return
+
+    // Add confirmation dialog
+    const confirmed = window.confirm(
+        'Are you sure you want to reject this delivery? This action cannot be undone.'
+    )
+    if (!confirmed) return
+
+    try {
+        loading.value = true
+        error.value = null
+
+        const response = await axios.put(
+            `${ORDER_SERVICE_URL}/orders/${activeOrder.value.orderId}/status`,
+            {
+                status: 'PENDING',  // Reset status to PENDING
+                driverStatus: 'AVAILABLE',  // Set driver status to AVAILABLE
+                driverId: null  // Remove driver assignment
+            }
+        )
+
+        console.log('Delivery rejected:', response.data)
+        window.alert('Delivery rejected successfully')
+
+        // Refresh order data
+        await fetchAllOrders()
+
+    } catch (err) {
+        console.error('Error rejecting delivery:', err)
+        error.value = `Failed to reject delivery: ${err.message}`
+        window.alert(`Failed to reject delivery: ${err.message}`)
+    } finally {
+        loading.value = false
+    }
+}
+
+const cancelDelivery = async () => {
+    if (!activeOrder.value) return;
+
+    // Add confirmation dialog
+    const confirmed = window.confirm(
+        'Are you sure you want to cancel this delivery? This action cannot be undone and the customer will be refunded.'
+    );
+    if (!confirmed) return;
+
+    try {
+        loading.value = true;
+        error.value = null;
+
+        console.log('Cancelling delivery for order:', activeOrder.value.orderId);
+        
+        // Call the delivery-food composite service
+        const response = await axios.post(
+            `${DELIVERY_FOOD_SERVICE_URL}/deliver-food/cancel/${activeOrder.value.orderId}`
+        );
+
+        console.log('Cancel delivery response:', response.data);
+
+        if (response.data.code === 200) {
+            // Show success message
+            window.alert('Delivery cancelled successfully. Customer has been notified and refunded.');
+            // Refresh order data
+            await fetchAllOrders();
+        } else {
+            throw new Error(response.data.message || 'Failed to cancel delivery');
+        }
+
+    } catch (err) {
+        console.error('Error cancelling delivery:', err);
+        error.value = `Failed to cancel delivery: ${err.response?.data?.message || err.message}`;
+        window.alert(`Failed to cancel delivery: ${err.response?.data?.message || err.message}`);
+    } finally {
+        loading.value = false;
+    }
+};
+
 
 // Set up auto-refresh to check for newly assigned orders
 const AUTO_REFRESH_INTERVAL = 30000 // 30 seconds

@@ -71,7 +71,7 @@ create_queue(
     binding_keys=[
                 "order.*.error",    # All order errors
                 "payment.*.error",   # All payment errors
-                "wallet.*.error"     # All wallet errors
+                "wallet.*.error",     # All wallet errors
                 ],
 )
 
@@ -82,7 +82,8 @@ create_queue(
     binding_keys=[
                 "order.*.error",    # All order errors
                 "payment.*.error",   # All payment errors
-                "wallet.*.error"     # All wallet errors
+                "wallet.*.error",    # All wallet errors
+                "order.cancel.notification"
                 ],
 )
 

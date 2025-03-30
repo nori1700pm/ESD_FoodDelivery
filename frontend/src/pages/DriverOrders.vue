@@ -21,7 +21,7 @@
     <div v-else-if="orders.length === 0" class="text-center py-16 bg-white rounded-lg shadow-lg">
       <vue-feather type="package" size="64" class="mx-auto text-gray-400 mb-4" />
       <h2 class="text-2xl font-bold mb-2">No delivery history</h2>
-      <p class="text-gray-600 mb-6">Your completed deliveries will appear here</p>
+      <p class="text-gray-600 mb-6">Your completed and cancelled deliveries will appear here</p>
       <p class="text-gray-500 mb-2">Check the Active Delivery page for current assignments</p>
     </div>
 
@@ -49,12 +49,12 @@
           <!-- Order details -->
           <div class="border-t border-b py-4 mb-4">
             <div class="mb-3">
-              <span class="text-gray-500">Order ID:</span> 
+              <span class="text-gray-500">Order ID: </span>
               <span class="font-medium">{{ order.orderId }}</span>
             </div>
-            
+
             <div class="mb-3">
-              <span class="text-gray-500">Delivered on:</span> 
+              <span class="text-gray-500">Delivered on: </span>
               <span class="font-medium">{{ formatDate(order.updatedAt) }}</span>
             </div>
 
@@ -102,7 +102,7 @@ const driverId = ref('')
 // Compute the completed orders only
 const completedOrders = computed(() => {
   return orders.value
-    .filter(order => ['DELIVERED', 'COMPLETED'].includes(order.status))
+    .filter(order => ['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(order.status))
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
 })
 
@@ -156,7 +156,7 @@ const fetchDriverOrders = async () => {
 
     const response = await axios.get(`${ORDER_SERVICE_URL}/orders?driverId=${driverId.value}`)
     console.log('Raw orders response:', response.data)
-        
+
     if (response.data && Array.isArray(response.data)) {
       // Process orders
       orders.value = response.data

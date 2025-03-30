@@ -29,6 +29,7 @@ services:
       - walletURL=http://wallet-service:5002
       - errorURL=http://error-service:5003
       - customerURL=http://customer-service:4000
+      - assignDriverURL=http://assign-driver:5006 
       - PORT=5004
     networks:
       - app-network
@@ -88,6 +89,8 @@ services:
       - PORT=6000
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
       - PYTHONPATH=/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6000/health"]
@@ -133,10 +136,13 @@ services:
     environment:
       - DEBUG=false
       - PORT=5005
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
       - orderURL=http://order-service:5001
       - walletURL=http://wallet-service:5002
       - customerURL=http://customer-service:4000
+      - notificationURL=http://notification-service:6000 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
       interval: 30s
@@ -149,6 +155,7 @@ services:
       - order-service
       - wallet-service
       - customer-service
+      - rabbitmq
 
   rabbitmq:
     image: rabbitmq:3-management

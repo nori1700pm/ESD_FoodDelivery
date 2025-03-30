@@ -22,6 +22,8 @@ order_URL = environ.get('orderURL') or 'http://localhost:5001'
 wallet_URL = environ.get('walletURL') or 'http://localhost:5002'
 error_URL = environ.get('errorURL') or 'http://localhost:5003'
 customer_URL = environ.get('customerURL') or 'http://localhost:4000'
+assign_driver_URL = environ.get('assignDriverURL') or 'http://localhost:5006'
+
 
 @app.route("/create-order", methods=['POST', 'OPTIONS'])
 def create_order():
@@ -189,7 +191,7 @@ def pay_delivery():
             'driverId': None,
             'driverStatus': 'PENDING',
             'paymentStatus': 'PAID',  # Set as PAID since payment successful
-            'status': 'PAID',  # Set as PAID since payment successful
+            'status': 'PREPARING',  # Set as PAID since payment successful
             'restaurantId': data['restaurantId'],
             'restaurantName': data['restaurantName'],
             'createdAt': timestamp,
@@ -204,25 +206,61 @@ def pay_delivery():
         )
         print('order_result:', order_result)
 
-        if isinstance(order_result, dict) and order_result.get('error'):
-            # Order creation failed
-            return jsonify({
-                "code": 500,
-                "message": f"Payment successful but order creation failed: {order_result.get('error')}",
-                "data": {
-                    "wallet_result": wallet_result,
-                    "order_error": order_result
-                }
-            }), 500
+        if isinstance(order_result, dict) and not order_result.get('error'):
+            print('\n-----Invoking assign-driver service-----')
+            try:
+                driver_assignment = invoke_http(
+                    f"{assign_driver_URL}/assign-driver",
+                    method='POST',
+                    json={
+                        "OrderID": data['orderId']
+                    }
+                )
+                print('driver_assignment_result:', driver_assignment)
+
+                if driver_assignment.get('code') == 200:
+                    return jsonify({
+                        "code": 200,
+                        "data": {
+                            "wallet_result": wallet_result,
+                            "order_result": order_result,
+                            "driver_assignment": driver_assignment['data']
+                        },
+                        "message": "Payment processed, order created, and driver assigned successfully"
+                    }), 200
+                else:
+                    # Driver assignment failed, but order and payment succeeded
+                    return jsonify({
+                        "code": 207,  # Partial success
+                        "data": {
+                            "wallet_result": wallet_result,
+                            "order_result": order_result,
+                            "driver_assignment_error": driver_assignment
+                        },
+                        "message": "Payment and order successful, but driver assignment failed"
+                    }), 207
+
+            except Exception as driver_error:
+                print(f"Error assigning driver: {str(driver_error)}")
+                # Return partial success if driver assignment fails
+                return jsonify({
+                    "code": 207,
+                    "data": {
+                        "wallet_result": wallet_result,
+                        "order_result": order_result,
+                        "driver_assignment_error": str(driver_error)
+                    },
+                    "message": "Payment and order successful, but driver assignment failed"
+                }), 207
 
         return jsonify({
-            "code": 200,
+            "code": 500,
+            "message": f"Order creation failed: {order_result.get('error')}",
             "data": {
                 "wallet_result": wallet_result,
-                "order_result": order_result
-            },
-            "message": "Payment processed and order created successfully"
-        }), 200
+                "order_error": order_result
+            }
+        }), 500
 
     except Exception as e:
         print(f"Error in pay_delivery: {str(e)}")

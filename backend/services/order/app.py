@@ -146,7 +146,7 @@ def update_order(order_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/orders/<order_id>/status', methods=['PATCH'])
+@app.route('/orders/<order_id>/status', methods=['PUT'])
 def update_order_status(order_id):
     """Update order status fields"""
     try:

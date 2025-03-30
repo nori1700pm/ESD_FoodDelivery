@@ -12,32 +12,36 @@ exchange_type = "topic"
 queue_name = "notification_queue" #### take note ive changed the queue name!  
 
 def callback(channel, method, properties, body):
-    # required signature for the callback; no return
     try:
-        error = json.loads(body)
-        print(f"JSON: {error}")
+        message_data = json.loads(body)
+        print(f"Received message: {message_data}")
+        print(f"Routing key: {method.routing_key}")  # Add this for debugging
 
-        # What is new: Using dynamic template
-        if error['message'] == "Insufficient balance":
-            payment_message = "Due to insufficient balance, the order is unprocessed. Please top up your wallet balance before proceeding."
-        else:
-            payment_message = "error.message is not Insufficient balance"
-
-
-        # Initialize Mail correctly with personalization
+        # Initialize Mail with personalization
         message = Mail(from_email=Email('nomnomgodelivery@gmail.com'))
         personalization = Personalization()
-        personalization.add_to(To('chaizheqing2004@gmail.com'))
-        personalization.dynamic_template_data = {
-            "subtotal": "11",
-            "delivery_fare": "111",
-            "total": "11111",
-            "payment_message": payment_message
-        }
-        message.add_personalization(personalization)
-        message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
+        personalization.add_to(To('tabithasim223@gmail.com')) # recipient
 
-        ## here ends change
+        # Check message type based on routing key
+        if method.routing_key == "order.cancel.notification":
+            print("Processing cancellation notification")
+            # Use the same template ID as other notifications for now
+            personalization.dynamic_template_data = {
+                "payment_message": message_data.get('message', 'No message provided'),
+                "timestamp": "2025-03-30 06:59:12"  # Current timestamp
+            }
+            message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'  # Use the working template ID
+        else:
+            print("Processing other notification")
+            personalization.dynamic_template_data = {
+                "payment_message": message_data.get('message', 'No message provided'),
+                "timestamp": "2025-03-30 06:59:12"  # Current timestamp
+            }
+            message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
+
+        message.add_personalization(personalization)
+        
+        print("Preparing to send email with data:", personalization.dynamic_template_data)
 
         try:
             sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
@@ -45,16 +49,14 @@ def callback(channel, method, properties, body):
                 print("WARNING: SENDGRID_API_KEY environment variable is not set")
             response = sg.send(message)
             print(f"Email sent! Status code: {response.status_code}")
-            print(f"Response body: {response.body}")
             print(f"Response headers: {response.headers}")
         except Exception as e:
             print(f"ERROR sending email: {str(e)}")
 
     except Exception as e:
-        print(f"Unable to parse JSON: {e=}")
-        print(f"Message: {body}")
+        print(f"Unable to process message: {e}")
+        print(f"Message body: {body}")
     print()
-
 
 if __name__ == "__main__":
     print(f"This is {os.path.basename(__file__)} - amqp consumer...")

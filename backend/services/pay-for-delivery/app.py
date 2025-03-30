@@ -90,6 +90,7 @@ def create_order():
             'items': cleaned_items,
             'deliveryAddress': data['address'],
             'price': data['amount'],
+            'deliveryFee': data['deliveryFee'],
             'driverId': None,
             'driverStatus': 'PENDING',
             'paymentStatus': 'PENDING',
@@ -135,7 +136,7 @@ def pay_delivery():
         print('Received data:', data)
         
         # Validate required fields
-        required_fields = ['custId', 'orderId', 'amount', 'items', 'address', 'restaurantId', 'restaurantName']
+        required_fields = ['custId', 'orderId', 'amount', 'items', 'address', 'restaurantId', 'restaurantName','deliveryFee']
         missing_fields = [field for field in required_fields if field not in data]
         if missing_fields:
             return jsonify({
@@ -191,6 +192,7 @@ def pay_delivery():
             'items': cleaned_items,
             'deliveryAddress': data['address'],
             'price': data['amount'],
+            'deliveryFee': data['deliveryFee'], 
             'driverId': None,
             'driverStatus': 'PENDING',
             'paymentStatus': 'PAID',  # Set as PAID since payment successful

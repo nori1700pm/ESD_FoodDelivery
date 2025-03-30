@@ -97,7 +97,7 @@ def create_order():
         print("Received order data:", order_data)
         
         # Validate required fields
-        required_fields = ['customerId', 'items', 'price', 'status', 'deliveryAddress']
+        required_fields = ['customerId', 'items', 'price', 'status', 'deliveryAddress', 'deliveryFee']
         missing_fields = [field for field in required_fields if field not in order_data]
         if missing_fields:
             return jsonify({'error': f"Missing required fields: {', '.join(missing_fields)}"}), 400

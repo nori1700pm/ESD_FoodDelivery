@@ -162,11 +162,16 @@ def cancel_order(order_id):
             print("Customer result:", customer_result)
 
             if customer_result and 'error' not in customer_result:
+                delivery_fee = float(order_result.get('deliveryFee', 0))
+                subtotal = order_amount - delivery_fee
                 # Prepare notification data
                 notification_data = {
                     #"recipient": customer_result.get('email'),
                     "recipient": "tabithasim223@gmail.com",  # Hard-code test email
                     "subject": "Order Cancelled and Refund Processed",
+                    "subtotal": f"{subtotal:.2f}",  # Add formatted subtotal
+                    "delivery_fee": f"{delivery_fee:.2f}",  # Add formatted delivery fee
+                    "total": f"{order_amount:.2f}",  # Add formatted total                   
                     "message": f"""
                     Your order #{order_id} has been cancelled.
                     A refund of ${order_amount:.2f} has been processed to your wallet.

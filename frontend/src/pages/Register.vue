@@ -68,10 +68,6 @@
           rows="3"
         ></textarea>
       </div>
-
-      <div v-if="userType === 'driver'">
-        <!-- Removed driverLocation input field -->
-      </div>
       
       <button
         type="submit"
@@ -115,6 +111,17 @@ const handleSubmit = async () => {
       (userType.value === 'customer' && !address.value)) {
     error.value = 'Please fill in all fields'
     return
+  }
+
+  // Email domain validation
+  const emailDomain = email.value.split('@')[1];
+  if (userType.value === 'driver' && emailDomain !== 'driver.com') {
+    error.value = 'Drivers must use an email with the domain @driver.com';
+    return;
+  }
+  if (userType.value === 'customer' && emailDomain === 'driver.com') {
+    error.value = 'Customers cannot use an email with the domain @driver.com';
+    return;
   }
 
   try {

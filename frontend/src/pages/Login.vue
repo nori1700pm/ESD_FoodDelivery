@@ -102,7 +102,19 @@ const handleSubmit = async () => {
     error.value = 'Please enter both email and password'
     return
   }
-  
+
+  // Prevent customers from using @driver.com email
+  if (loginType.value === 'customer' && email.value.endsWith('@driver.com')) {
+    error.value = 'Please log in as a driver if your email ends with @driver.com'
+    return
+  }
+
+  // Ensure drivers use @driver.com email
+  if (loginType.value === 'driver' && !email.value.endsWith('@driver.com')) {
+    error.value = 'Driver email must end with @driver.com, Please log in as a customer if you are not a driver'
+    return
+  }
+
   try {
     loading.value = true
     error.value = null

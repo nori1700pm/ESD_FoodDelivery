@@ -105,6 +105,7 @@ const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
 const balance = ref(0)
+const email = ref('')
 
 const deliveryFee = computed(() => {
   if (!items.value.length) {
@@ -156,6 +157,12 @@ const getProfileAndBalance = async () => {
       if (result.data.balance !== undefined) {
         console.log('Setting balance:', result.data.balance)
         balance.value = result.data.balance
+      }
+
+      // Set email
+      if (result.data.email !== undefined) {
+        console.log('Setting email:', result.data.email)
+        email.value = result.data.email
       }
     } else {
       console.warn('Invalid profile data format:', result)
@@ -242,6 +249,7 @@ const handleSubmit = async () => {
     // First, process the payment
     const paymentPayload = {
       custId: user.value.uid,
+      custEmail: email.value,
       orderId: orderId,
       amount: totalWithDelivery.value,
       items: cartItems.map(item => ({
@@ -256,6 +264,7 @@ const handleSubmit = async () => {
         }
       })),
       address: address.value,
+      subtotal: total.value,
       deliveryFee: deliveryFee.value,
       restaurantId: firstItem.restaurantId || firstItem.restaurant?.id,
       restaurantName: firstItem.restaurantName || firstItem.restaurant?.name,

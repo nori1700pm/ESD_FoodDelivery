@@ -150,6 +150,30 @@ services:
       - wallet-service
       - customer-service
 
+  assign-driver:
+    build: 
+      context: ./backend/services/assign-driver
+      dockerfile: Dockerfile
+    ports:
+      - "5006:5006"
+    environment:
+      - DEBUG=false
+      - PORT=5006
+      - FIREBASE_CONFIG=${FIREBASE_CONFIG}
+      - orderURL=http://order-service:5001
+      - customerURL=http://customer-service:4000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5006/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - order-service
+      - customer-service
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:

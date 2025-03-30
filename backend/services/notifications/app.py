@@ -18,7 +18,7 @@ def callback(channel, method, properties, body):
         print(f"JSON: {error}")
 
         # What is new: Using dynamic template
-        if error['message'] == "Insufficient balance":
+        if error['payment_status'] == "Unpaid":
             payment_message = "Due to insufficient balance, the order is unprocessed. Please top up your wallet balance before proceeding."
         else:
             payment_message = "error.message is not Insufficient balance"
@@ -27,11 +27,12 @@ def callback(channel, method, properties, body):
         # Initialize Mail correctly with personalization
         message = Mail(from_email=Email('nomnomgodelivery@gmail.com'))
         personalization = Personalization()
-        personalization.add_to(To('chaizheqing2004@gmail.com'))
+        personalization.add_to(To('chaizheqing2004@gmail.com')) # to replace with error.get("custEmail")
         personalization.dynamic_template_data = {
-            "subtotal": "11",
-            "delivery_fare": "111",
-            "total": "11111",
+            "subtotal": error.get('subtotal'),
+            "delivery_fee": error.get('delivery_fee'),
+            "total": error.get("total"),
+            "payment_status":error.get("payment_status"), # or refund 
             "payment_message": payment_message
         }
         message.add_personalization(personalization)

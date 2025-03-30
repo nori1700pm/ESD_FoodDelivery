@@ -78,6 +78,17 @@ create_queue(
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
+    queue_name="notification_queue",
+    binding_keys=[
+                "order.*.error",    # All order errors
+                "payment.*.error",   # All payment errors
+                "wallet.*.error"     # All wallet errors
+                ],
+)
+
+create_queue(
+    channel=channel,
+    exchange_name=exchange_name,
     queue_name="Activity_Log",
     binding_keys=["#"],
 )

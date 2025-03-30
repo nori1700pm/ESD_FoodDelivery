@@ -71,35 +71,37 @@ def is_connection_open(connection):
 def start_consuming(
      hostname, port, exchange_name, exchange_type, queue_name, callback
 ):
-     while True:
-          try:
-               
-                connection, channel = connect(
-                     hostname=hostname,
-                     port=port,
-                     exchange_name=exchange_name,
-                     exchange_type=exchange_type,
-                )
+    while True:
+        try:
+            print("[DEBUG] Connecting and setting up channel...")
+            connection, channel = connect(
+                hostname=hostname,
+                port=port,
+                exchange_name=exchange_name,
+                exchange_type=exchange_type,
+            )
 
-               # Ensure the queue exists before consuming
-                print(f"Declaring queue (if not exists): {queue_name}")
-                channel.queue_declare(queue=queue_name, durable=True)
+            print(f"[DEBUG] Declaring queue: {queue_name}")
+            channel.queue_declare(queue=queue_name, durable=True)
 
-                print(f"Consuming from queue: {queue_name}")
-                channel.basic_consume(
-                     queue=queue_name, on_message_callback=callback, auto_ack=True
-                )
-                channel.start_consuming()
+            print(f"[DEBUG] Consuming from queue: {queue_name}")
+            channel.basic_consume(
+                queue=queue_name, on_message_callback=callback, auto_ack=True
+            )
 
-          except pika.exceptions.ConnectionClosedByBroker:
-                print("Connection closed. Try to reconnect...")
-                continue
+            print("[DEBUG] Waiting for messages...")
+            channel.start_consuming()  # This will block until interrupted
 
-          except KeyboardInterrupt:
-                close(connection, channel)
-                break
+        except pika.exceptions.ConnectionClosedByBroker:
+            print("[WARN] Connection closed by broker. Reconnecting...")
+            continue
 
-          except Exception as e:
-                print(f"Error: {e}")
-                print("Retrying in 5 seconds...")
-                time.sleep(5)
+        except KeyboardInterrupt:
+            print("[INFO] Keyboard interrupt. Shutting down...")
+            close(connection, channel)
+            break
+
+        except Exception as e:
+            print(f"[ERROR] Unhandled exception: {e}")
+            print("[DEBUG] Reconnecting in 5 seconds...")
+            time.sleep(5)

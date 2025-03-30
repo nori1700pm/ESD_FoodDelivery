@@ -13,32 +13,27 @@ queue_name = "notification_queue" #### take note ive changed the queue name!
 
 def callback(channel, method, properties, body):
     try:
-        message_data = json.loads(body)
-        print(f"Received message: {message_data}")
-        print(f"Routing key: {method.routing_key}")  # Add this for debugging
+        error = json.loads(body)
+        print(f"JSON: {error}")
 
-        # Initialize Mail with personalization
+        # What is new: Using dynamic template
+        if error['payment_status'] == "Unpaid":
+            payment_message = "Due to insufficient balance, the order is unprocessed. Please top up your wallet balance before proceeding."
+        else:
+            payment_message = "error.message is not Insufficient balance"
+
+
+        # Initialize Mail correctly with personalization
         message = Mail(from_email=Email('nomnomgodelivery@gmail.com'))
         personalization = Personalization()
-        personalization.add_to(To('tabithasim223@gmail.com')) # recipient
-
-        # Check message type based on routing key
-        if method.routing_key == "order.cancel.notification":
-            print("Processing cancellation notification")
-            # Use the same template ID as other notifications for now
-            personalization.dynamic_template_data = {
-                "payment_message": message_data.get('message', 'No message provided'),
-                "timestamp": "2025-03-30 06:59:12"  # Current timestamp
-            }
-            message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'  # Use the working template ID
-        else:
-            print("Processing other notification")
-            personalization.dynamic_template_data = {
-                "payment_message": message_data.get('message', 'No message provided'),
-                "timestamp": "2025-03-30 06:59:12"  # Current timestamp
-            }
-            message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
-
+        personalization.add_to(To('chaizheqing2004@gmail.com')) # to replace with error.get("custEmail")
+        personalization.dynamic_template_data = {
+            "subtotal": error.get('subtotal'),
+            "delivery_fee": error.get('delivery_fee'),
+            "total": error.get("total"),
+            "payment_status":error.get("payment_status"), # or refund 
+            "payment_message": payment_message
+        }
         message.add_personalization(personalization)
         
         print("Preparing to send email with data:", personalization.dynamic_template_data)

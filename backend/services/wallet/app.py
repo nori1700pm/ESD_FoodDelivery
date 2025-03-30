@@ -103,9 +103,13 @@ def process_payment(customer_id):
         if current_balance < amount:
             error_details = {
                 'errorId': str(uuid.uuid4()),
-                'custId': customer_id,
+                'custEmail': data.get('custEmail'),
                 'orderId': order_id,
-                'message': 'Insufficient balance'
+                'payment_status': 'Unpaid',
+
+                'subtotal': data.get('subtotal'),
+                'delivery_fee':data.get('delivery_fee'),
+                'total':amount
             }
             print("Attempting sending error to queue")
             send_error_to_queue(error_details)
@@ -169,6 +173,7 @@ def process_payment(customer_id):
 def update_wallet(customer_id):
     try:
         data = request.get_json()
+        print("Received data:", data)
         new_balance = float(data.get('balance', 0))
 
         if new_balance < 0:

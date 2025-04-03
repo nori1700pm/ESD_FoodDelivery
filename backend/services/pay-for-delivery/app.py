@@ -215,11 +215,8 @@ def pay_delivery():
             print('\n-----Invoking assign-driver service-----')
             try:
                 driver_assignment = invoke_http(
-                    f"{assign_driver_URL}/assign-driver",
-                    method='POST',
-                    json={
-                        "OrderID": data['orderId']
-                    }
+                    f"{assign_driver_URL}/assign/{data['orderId']}",
+                    method='POST'
                 )
                 print('driver_assignment_result:', driver_assignment)
 

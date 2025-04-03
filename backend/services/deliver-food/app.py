@@ -72,7 +72,7 @@ def cancel_order(order_id):
     try:
         print(f"\n=== Starting order cancellation for order {order_id} ===")
         
-        # Step 1: Get the order details first
+        # Step 1: Get the order details 
         print(f"Fetching order details from {ORDER_URL}/orders/{order_id}")
         order_result = invoke_http(
             f"{ORDER_URL}/orders/{order_id}",
@@ -128,17 +128,17 @@ def cancel_order(order_id):
             }), 500
 
         # Step 3: Update order status
-        current_sg_time = "2025-03-30 06:40:35"  # Use the provided timestamp
+        current_sg_time = "2025-03-30 06:40:35" 
         update_data = {
             "status": "CANCELLED",
             "paymentStatus": "REFUNDED",
-            "driverStatus": "AVAILABLE",  # Make sure to update driver status
+            "driverStatus": 'CANCELLED',  
             "updatedAt": current_sg_time
         }
         
         print(f"\nUpdating order status: {update_data}")
         final_update = invoke_http(
-            f"{ORDER_URL}/orders/{order_id}/status",  # Changed to status endpoint
+            f"{ORDER_URL}/orders/{order_id}/status",  
             method="PUT",
             json=update_data
         )
@@ -169,9 +169,9 @@ def cancel_order(order_id):
                     #"recipient": customer_result.get('email'),
                     "recipient": "tabithasim223@gmail.com",  # Hard-code test email
                     "subject": "Order Cancelled and Refund Processed",
-                    "subtotal": f"{subtotal:.2f}",  # Add formatted subtotal
-                    "delivery_fee": f"{delivery_fee:.2f}",  # Add formatted delivery fee
-                    "total": f"{order_amount:.2f}",  # Add formatted total                   
+                    "subtotal": f"{subtotal:.2f}",  
+                    "delivery_fee": f"{delivery_fee:.2f}",  
+                    "total": f"{order_amount:.2f}",            
                     "message": f"""
                     Your order #{order_id} has been cancelled.
                     A refund of ${order_amount:.2f} has been processed to your wallet.
@@ -189,7 +189,7 @@ def cancel_order(order_id):
 
         except Exception as notification_error:
             print(f"Notification error (non-critical): {notification_error}")
-            # Continue even if notification fails
+            
 
         # Return success response
         return jsonify({

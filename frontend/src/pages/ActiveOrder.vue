@@ -178,7 +178,7 @@ const GETDRIVERBYEMAIL_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.
 const ORDER_SERVICE_URL = 'http://localhost:5001'
 const CUSTOMER_SERVICE_URL = 'http://localhost:4000'
 const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:5005'
-
+const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:5008'  
 
 const fetchDriverInfo = async (email) => {
     try {
@@ -374,7 +374,6 @@ const formatDate = (timestamp) => {
 const rejectDelivery = async () => {
     if (!activeOrder.value) return
 
-    // Add confirmation dialog
     const confirmed = window.confirm(
         'Are you sure you want to reject this delivery? This action cannot be undone.'
     )
@@ -384,25 +383,25 @@ const rejectDelivery = async () => {
         loading.value = true
         error.value = null
 
-        const response = await axios.put(
-            `${ORDER_SERVICE_URL}/orders/${activeOrder.value.orderId}/status`,
-            {
-                status: 'PENDING',  // Reset status to PENDING
-                driverStatus: 'AVAILABLE',  // Set driver status to AVAILABLE
-                driverId: null  // Remove driver assignment
-            }
+        // Call the reject-delivery microservice
+        const response = await axios.post(
+            `${REJECT_DELIVERY_SERVICE_URL}/reject-delivery/${activeOrder.value.orderId}/${driverId.value}`
         )
 
-        console.log('Delivery rejected:', response.data)
-        window.alert('Delivery rejected successfully')
+        console.log('Reject delivery response:', response.data)
 
-        // Refresh order data
-        await fetchAllOrders()
+        if (response.data.code === 200) {
+            window.alert('Delivery rejected successfully. Finding new driver.')
+            
+            await fetchAllOrders()
+        } else {
+            throw new Error(response.data.message || 'Failed to reject delivery')
+        }
 
     } catch (err) {
         console.error('Error rejecting delivery:', err)
-        error.value = `Failed to reject delivery: ${err.message}`
-        window.alert(`Failed to reject delivery: ${err.message}`)
+        error.value = `Failed to reject delivery: ${err.response?.data?.message || err.message}`
+        window.alert(`Failed to reject delivery: ${err.response?.data?.message || err.message}`)
     } finally {
         loading.value = false
     }
@@ -411,7 +410,6 @@ const rejectDelivery = async () => {
 const cancelDelivery = async () => {
     if (!activeOrder.value) return;
 
-    // Add confirmation dialog
     const confirmed = window.confirm(
         'Are you sure you want to cancel this delivery? This action cannot be undone and the customer will be refunded.'
     );

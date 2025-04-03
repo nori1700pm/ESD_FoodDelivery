@@ -9,7 +9,7 @@ CORS(app)
 # Service URLs
 ORDER_URL = os.environ.get('orderURL', "http://order-service:5001")
 NOTIFICATION_URL = os.environ.get('notificationURL', "http://notification-service:6000")
-DRIVER_URL = os.environ.get('driverURL', "https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/#/")
+DRIVER_URL = os.environ.get('driverURL', "https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo")
 
 def fetch_and_update_driver():
     # Fetch available drivers
@@ -79,7 +79,8 @@ def assign_driver():
         "DriverID": driver_id
     }), 200
 
-
-
+if __name__ == "__main__":
+    print("This is flask " + os.path.basename(__file__) + " for assigning drivers")
+    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5006)), debug=True)
 
     

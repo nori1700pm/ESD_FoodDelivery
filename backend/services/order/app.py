@@ -130,8 +130,18 @@ def update_order(order_id):
     try:
         order_data = request.json
         
-        # Update timestamp
-        order_data['updatedAt'] = firestore.SERVER_TIMESTAMP
+        # Use ISO format string instead of SERVER_TIMESTAMP
+        sg_timezone = timezone(timedelta(hours=8))
+        current_sg_time = datetime.now(sg_timezone)
+        order_data['updatedAt'] = current_sg_time.isoformat()
+        
+        # Handle None values for field deletion
+        update_data = {}
+        for key, value in order_data.items():
+            if value is None:
+                update_data[key] = firestore.DELETE_FIELD
+            else:
+                update_data[key] = value
         
         # Update in Firestore
         order_ref = db.collection('orders').document(order_id)
@@ -140,12 +150,16 @@ def update_order(order_id):
         if not order.exists:
             return jsonify({'error': 'Order not found'}), 404
         
-        order_ref.update(order_data)
+        order_ref.update(update_data)
         
-        return jsonify({'id': order_id, **order_data})
+        # Return the updated data without Sentinel values
+        response_data = {k: v for k, v in order_data.items() if v is not None}
+        return jsonify({'id': order_id, **response_data})
+    
     except Exception as e:
+        print(f"Error updating order: {str(e)}")  # Add logging
         return jsonify({'error': str(e)}), 500
-
+    
 @app.route('/orders/<order_id>/status', methods=['PUT'])
 def update_order_status(order_id):
     """Update order status fields"""

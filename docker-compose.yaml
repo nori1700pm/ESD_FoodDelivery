@@ -181,6 +181,31 @@ services:
       - order-service
       - customer-service
 
+  reject-delivery:
+    build: 
+      context: ./backend/services/reject-delivery
+      dockerfile: Dockerfile
+    ports:
+      - "5008:5008"
+    environment:
+      - DEBUG=false
+      - PORT=5008
+      - FIREBASE_CONFIG=${FIREBASE_CONFIG}
+      - orderURL=http://order-service:5001
+      - driversURL=https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo
+      - assignDriverURL=http://assign-driver:5006
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5008/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - order-service
+      - assign-driver
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:

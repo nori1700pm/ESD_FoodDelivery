@@ -1,5 +1,24 @@
 <template>
   <div>
+    <!-- Back Button -->
+    <div class="mt-4 ml-4">
+      <button 
+        @click="$router.push('/restaurants')" 
+        class="text-gray-600 hover:text-blue-500 font-semibold"
+      >
+        ← Back to Restaurants
+      </button>
+    </div>
+    
+
+    <!-- Toast Notification -->
+    <div 
+      v-if="toastMessage" 
+      class="fixed top-16 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50"
+    >
+      {{ toastMessage }}
+    </div>
+
     <div v-if="loading" class="flex justify-center items-center h-64">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
     </div>
@@ -92,16 +111,30 @@ const restaurant = ref(null)
 const menuItems = ref([])
 const loading = ref(true)
 const error = ref(null)
+const toastMessage = ref(null);
+
+const showToast = (message) => {
+  toastMessage.value = message;
+  setTimeout(() => {
+    toastMessage.value = null;
+  }, 3000); // Toast disappears after 3 seconds
+};
 
 const handleAddToCart = (menuItem) => {
   if (!user.value) {
-    alert("Please log in to add items to your cart")
-    return
+    alert("Please log in to add items to your cart");
+    return;
   }
-  console.log('Restaurant delivery fee:', restaurant.value.deliveryFee) 
-  console.log('Restaurant data:', restaurant.value)
-  console.log('Menu item being added:', menuItem)
-  
+
+  const cartItems = cart.items; // Access items in the cart
+  if (cartItems.length > 0) {
+    const existingRestaurantId = cartItems[0].restaurant.id;
+    if (existingRestaurantId !== restaurant.value.id) {
+      alert("You can only add items from the same restaurant.");
+      return;
+    }
+  }
+
   const itemWithRestaurant = {
     id: menuItem.id,
     name: menuItem.name,
@@ -111,12 +144,12 @@ const handleAddToCart = (menuItem) => {
     restaurant: {
       id: restaurant.value.id,
       name: restaurant.value.name,
-      deliveryFee: restaurant.value.deliveryFee 
-    }
-  }
-  
-  console.log('Item with restaurant being added to cart:', itemWithRestaurant)
-  cart.addItem(itemWithRestaurant)
+      deliveryFee: restaurant.value.deliveryFee,
+    },
+  };
+
+  cart.addItem(itemWithRestaurant);
+  showToast(`${menuItem.name} added to cart!`);
 }
 
 onMounted(async () => {

@@ -160,8 +160,8 @@ services:
 
   assign-driver:
     build: 
-      context: ./backend/services/assign-driver
-      dockerfile: Dockerfile
+      context: ./backend/services
+      dockerfile: assign-driver/Dockerfile
     ports:
       - "5006:5006"
     environment:
@@ -170,6 +170,7 @@ services:
       - FIREBASE_CONFIG=${FIREBASE_CONFIG}
       - orderURL=http://order-service:5001
       - customerURL=http://customer-service:4000
+      - PYTHONPATH=/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5006/health"]
       interval: 30s
@@ -179,8 +180,12 @@ services:
     networks:
       - app-network
     depends_on:
-      - order-service
-      - customer-service
+      order-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      rabbitmq-init:
+        condition: service_completed_successfully
 
   reject-delivery:
     build: 

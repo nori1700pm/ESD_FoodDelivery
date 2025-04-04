@@ -9,15 +9,16 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
-COPY requirements.txt .
+COPY assign-driver/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files separately
-COPY app.py .
-COPY invokes.py .
+COPY assign-driver /app/assign-driver
+COPY assign-driver/invokes.py /app/invokes.py
+COPY rabbitmq /app/rabbitmq
 
 # Expose the port
 EXPOSE 5006
 
 # Run the Flask app
-CMD ["python", "app.py"]
+CMD ["python", "assign-driver/app.py"]

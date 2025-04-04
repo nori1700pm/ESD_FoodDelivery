@@ -2,12 +2,12 @@ from flask import Flask, request, jsonify
 import json
 import os
 from firebase_admin import credentials, firestore, initialize_app
-import pika
 import uuid
 from flask_cors import CORS
 import traceback  
 import rabbitmq.amqp_lib as amqp_lib
-import rabbitmq.amqp_setup 
+import pika
+
 
 
 app = Flask(__name__)
@@ -47,7 +47,7 @@ def send_error_to_queue(error_details):
         )
 
         connection.close()
-        print("  Error message sent successfully ✅")
+        print("  Error message sent successfully")
         return True
 
     except Exception as e:

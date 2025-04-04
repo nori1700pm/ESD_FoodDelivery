@@ -1,15 +1,26 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import json
 from invokes import invoke_http  
+import rabbitmq.amqp_lib as amqp_lib
+import pika 
 
 app = Flask(__name__)
 CORS(app)
 
 # Service URLs
 ORDER_URL = os.environ.get('orderURL', "http://order-service:5001")
-NOTIFICATION_URL = os.environ.get('notificationURL', "http://notification-service:6000")
 DRIVER_URL = os.environ.get('driverURL', "https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo")
+
+# Rabbit MQ variable
+RABBITMQ_PORT = int(os.environ.get('RABBITMQ_PORT', 5672))
+RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
+PORT = int(os.environ.get('PORT', 5002)) 
+
+exchange_name = "order_topic"
+exchange_type = "topic"
+queue_name = "notification_queue"  
 
 def fetch_and_update_driver(restaurant_id):
     # get available drivers
@@ -21,10 +32,7 @@ def fetch_and_update_driver(restaurant_id):
         # get driver ID from  response
         driver_id = available_drivers['Location']['driverId']
 
-        # Select first available driver
-        # selected_driver = available_drivers[0]
-        # driver_id = selected_driver.get("DriverID")
-        
+        # Get selected driver details
         driver_details = invoke_http(
             f"{DRIVER_URL}/getDriversById?Id={driver_id}",
             method="GET"
@@ -34,8 +42,9 @@ def fetch_and_update_driver(restaurant_id):
             return None, {"message": "Failed to get driver details"}, 500
 
         driver_info = driver_details['Driver']
+        print(driver_info)
 
-        # Check if driver is actually available
+        # Check if driver is available, if not, reselect a driver
         if driver_info.get('DriverStatus', '').upper() != 'AVAILABLE':
             
             # Get all drivers for this restaurant
@@ -120,13 +129,30 @@ def update_order(order_id, driver_id):
         print(f"Error in update_order: {str(e)}")  
         return {"message": f"Error updating order: {str(e)}"}, 500
 
-def send_notification(driver_id, order_id): #not done yet
+
+# RabbitMQ setup
+def send_notification(driver_id, order_id): 
     try:
-        notification_response = invoke_http(
-            f"{NOTIFICATION_URL}/notify",
-            method="POST",
-            json={"DriverID": driver_id, "OrderID": order_id}
+        print("  Connecting to AMQP broker...")
+        connection, channel = amqp_lib.connect(
+            hostname=RABBITMQ_HOST,
+            port=RABBITMQ_PORT,
+            exchange_name='order_topic',
+            exchange_type='topic',
         )
+
+        print("  Publishing driver assignment message to notification queue")
+        channel.basic_publish(
+            exchange='order_topic',
+            routing_key='driver.assigned.notification',
+            body=json.dumps(driver_id),
+            properties=pika.BasicProperties(delivery_mode=2)
+        )
+
+        connection.close()
+
+        print("Message sent successfully")
+        return True
     except Exception as e:
         print(f"Error sending notification: {str(e)}")  
         return None

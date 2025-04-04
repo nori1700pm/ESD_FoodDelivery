@@ -5,6 +5,8 @@ import json
 from invokes import invoke_http
 from firebase_admin import credentials, firestore, initialize_app
 import pika
+from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 CORS(app)
@@ -128,7 +130,8 @@ def cancel_order(order_id):
             }), 500
 
         # Step 3: Update order status
-        current_sg_time = "2025-03-30 06:40:35" 
+        sg_timezone = pytz.timezone('Asia/Singapore') # Define the Singapore timezone
+        current_sg_time = datetime.now(sg_timezone).strftime('%Y-%m-%d %H:%M:%S')
         update_data = {
             "status": "CANCELLED",
             "paymentStatus": "REFUNDED",
@@ -164,12 +167,14 @@ def cancel_order(order_id):
             if customer_result and 'error' not in customer_result:
                 delivery_fee = float(order_result.get('deliveryFee', 0))
                 subtotal = order_amount - delivery_fee
+                payment_status = "REFUNDED"
                 # Prepare notification data
                 notification_data = {
                     #"recipient": customer_result.get('email'),
                     "recipient": "tabithasim223@gmail.com",  # Hard-code test email
                     "subject": "Order Cancelled and Refund Processed",
                     "subtotal": f"{subtotal:.2f}",  
+                    "payment_status": payment_status,
                     "delivery_fee": f"{delivery_fee:.2f}",  
                     "total": f"{order_amount:.2f}",            
                     "message": f"""
@@ -177,7 +182,6 @@ def cancel_order(order_id):
                     A refund of ${order_amount:.2f} has been processed to your wallet.
                     Your new wallet balance is ${new_balance:.2f}.
                     """,
-                    "timestamp": current_sg_time
                 }
 
                 # Publish notification

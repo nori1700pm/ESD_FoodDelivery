@@ -64,6 +64,8 @@ channel = create_exchange(
 )
 
 # queues are created and declared here
+
+# error queue consuming all types of errors
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
@@ -75,6 +77,7 @@ create_queue(
                 ],
 )
 
+# notification queues consuming all errors and successful messages
 create_queue(
     channel=channel,
     exchange_name=exchange_name,
@@ -85,11 +88,4 @@ create_queue(
                 "wallet.*.error",    # All wallet errors
                 "order.cancel.notification"
                 ],
-)
-
-create_queue(
-    channel=channel,
-    exchange_name=exchange_name,
-    queue_name="Activity_Log",
-    binding_keys=["#"],
 )

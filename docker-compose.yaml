@@ -59,7 +59,8 @@ services:
     networks:
       - app-network
     depends_on:
-      - rabbitmq
+      rabbitmq-init:
+        condition: service_completed_successfully
 
   order-service:
     build:
@@ -225,8 +226,6 @@ services:
   rabbitmq-init:
     build:
       context: ./backend/services/rabbitmq
-    depends_on:
-      - rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 10s
@@ -238,6 +237,8 @@ services:
     networks:
       - app-network
     command: ["python", "amqp_setup.py"]
+    depends_on:
+      - rabbitmq
 
 
 networks:

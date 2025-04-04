@@ -105,8 +105,8 @@ def process_payment(customer_id):
                 'errorId': str(uuid.uuid4()),
                 'custEmail': data.get('custEmail'),
                 'orderId': order_id,
-                'payment_status': 'Unpaid',
-
+                'payment_status': 'UNPAID',
+                'message': 'Due to insufficient balance, the order is unprocessed. Please top up your wallet balance before proceeding.',
                 'subtotal': data.get('subtotal'),
                 'delivery_fee':data.get('delivery_fee'),
                 'total':amount

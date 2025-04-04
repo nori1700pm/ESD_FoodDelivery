@@ -21,35 +21,34 @@ def callback(channel, method, properties, body):
         personalization = Personalization()
         personalization.add_to(To('tabithasim223@gmail.com'))
 
-        # Check message type based on routing key and payment status
+        base_data = {
+            "subtotal": message_data.get('subtotal'),
+            "delivery_fee": message_data.get('delivery_fee'),
+            "total": message_data.get("total"),
+        }
+
+        # Check message type based on routing key and payment status (filter here)
+
+        # Cancellation of Order - Refund
         if method.routing_key == "order.cancel.notification":
             print("Processing cancellation notification")
-            personalization.dynamic_template_data = {
-                "subtotal": message_data.get('subtotal'),
-                "delivery_fee": message_data.get('delivery_fee'),
-                "total": message_data.get("total"),
-                "payment_status": "Cancelled",
+            base_data.update({
+                "payment_status": message_data.get('payment_status'),
                 "payment_message": message_data.get('message', 'No message provided'),
-                "timestamp": "2025-03-30 07:49:08"
-            }
-        else:
-            # Handle payment/error notifications
-            if message_data.get('payment_status') == "Unpaid":
-                payment_message = "Due to insufficient balance, the order is unprocessed. Please top up your wallet balance before proceeding."
-            else:
-                payment_message = "error.message is not Insufficient balance"
+            })
 
-            personalization.dynamic_template_data = {
-                "subtotal": message_data.get('subtotal'),
-                "delivery_fee": message_data.get('delivery_fee'),
-                "total": message_data.get("total"),
-                "payment_status": message_data.get("payment_status"),
-                "payment_message": payment_message
-            }
-
+        # Notifications for insufficient balance (payment error)
+        elif method.routing_key == "wallet.payment.error":
+            base_data.update({
+                "payment_status": message_data.get('payment_status'),
+                "payment_message": message_data.get('message', 'No message provided')
+            })
+            
         message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
+        personalization.dynamic_template_data = base_data
         message.add_personalization(personalization)
-        
+
+        # Code block will send the email here
         print("Preparing to send email with data:", personalization.dynamic_template_data)
 
         try:

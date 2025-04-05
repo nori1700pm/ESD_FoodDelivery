@@ -34,6 +34,7 @@ const initCart = async () => {
         name: item.name || 'Unknown Item',
         price: item.price || 0,
         quantity: item.quantity || 1,
+        image: item.image || "",
         restaurantId: item.restaurantId || 'unknown',
         restaurantName: item.restaurantName || 'Restaurant',
         restaurant: {
@@ -109,7 +110,7 @@ export const useCartStore = defineStore('cart', () => {
       console.log('Restaurant info in item:', {
         id: item.restaurantId,
         name: item.restaurantName,
-        restaurant: item.restaurant
+        restaurant: item.restaurant,
       })
       const cartRef = doc(db, 'carts', auth.user.uid)
       const existingItemIndex = items.value.findIndex(i => i.id === item.id)
@@ -126,6 +127,7 @@ export const useCartStore = defineStore('cart', () => {
         id: item.id,
         name: item.name || 'Unknown Item',
         price: item.price || 0,
+        image: item.image || "No image",
         restaurantId: item.restaurantId || item.restaurant?.id || 'unknown',
         restaurantName: item.restaurantName || item.restaurant?.name || 'Restaurant',
         restaurant: {
@@ -151,6 +153,7 @@ export const useCartStore = defineStore('cart', () => {
           name: item.name || 'Unknown Item',
           price: item.price || 0,
           quantity: item.quantity || 1,
+          image: item.image || "No image",
           restaurantId: item.restaurantId || 'unknown',
           restaurantName: item.restaurantName || 'Restaurant',
           restaurant: {
@@ -178,6 +181,7 @@ export const useCartStore = defineStore('cart', () => {
           name: item.name || 'Unknown Item',
           price: item.price || 0,
           quantity: item.quantity || 1,
+          image: item.image || "No image",
           restaurantId: item.restaurantId || 'unknown',
           restaurantName: item.restaurantName || 'Restaurant',
           restaurant: {

@@ -16,10 +16,11 @@ def callback(channel, method, properties, body):
         message_data = json.loads(body)
         print(f"JSON: {message_data}")
 
+        recipient_email = message_data.get('recipient')
         # Initialize Mail correctly with personalization
         message = Mail(from_email=Email('nomnomgodelivery@gmail.com'))
         personalization = Personalization()
-        personalization.add_to(To('tabithasim223@gmail.com'))
+        personalization.add_to(To(recipient_email)) 
 
         base_data = {
             "subtotal": message_data.get('subtotal'),
@@ -36,6 +37,7 @@ def callback(channel, method, properties, body):
                 "payment_status": message_data.get('payment_status'),
                 "payment_message": message_data.get('message', 'No message provided'),
             })
+            message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
 
         # Notifications for insufficient balance (payment error)
         elif method.routing_key == "wallet.payment.error":
@@ -43,10 +45,19 @@ def callback(channel, method, properties, body):
                 "payment_status": message_data.get('payment_status'),
                 "payment_message": message_data.get('message', 'No message provided')
             })
-            
-        message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
+
+            message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
+
+        elif method.routing_key == "driver.assigned.notification":
+            base_data.update({
+                "payment_status": message_data.get('payment_status'),
+                "items": message_data.get('items', []),
+            })
+
+            message.template_id = 'd-5aea4bf87a9f4737a69f8c42851049c2'
+
         personalization.dynamic_template_data = base_data
-        message.add_personalization(personalization)
+        message.add_personalization(personalization)   
 
         # Code block will send the email here
         print("Preparing to send email with data:", personalization.dynamic_template_data)

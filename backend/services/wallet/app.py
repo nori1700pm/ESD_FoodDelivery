@@ -103,13 +103,17 @@ def process_payment(customer_id):
         if current_balance < amount:
             error_details = {
                 'errorId': str(uuid.uuid4()),
-                'custEmail': data.get('custEmail'),
                 'orderId': order_id,
-                'payment_status': 'UNPAID',
-                'message': 'Due to insufficient balance, the order is unprocessed. Please top up your wallet balance before proceeding.',
+                'recipient': data.get('custEmail'),
+                'subject': 'Insufficient Wallet Balance',
                 'subtotal': data.get('subtotal'),
+                'payment_status': 'UNPAID',
                 'delivery_fee':data.get('delivery_fee'),
-                'total':amount
+                'total':amount,
+                "message": f"""
+                    Due to insufficient balance, the order #{order_id} is unprocessed. 
+                    Please top up your wallet balance before proceeding.
+                    """
             }
             print("Attempting sending error to queue")
             send_error_to_queue(error_details)

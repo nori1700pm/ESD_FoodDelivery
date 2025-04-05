@@ -133,6 +133,46 @@ def update_order(order_id, driver_id):
 # RabbitMQ setup
 def send_notification(driver_id, order_id): 
     try:
+        print(f"\n=== Retrieving order {order_id} ===")
+        order_result = invoke_http(
+            f"{ORDER_URL}/orders/{order_id}",
+            method="GET"
+        )
+        print("Order result:", order_result)
+        
+        if not order_result or 'error' in order_result:
+            print(f"Order not found or error: {order_result}")
+            return jsonify({
+                "code": 404,
+                "message": f"Order {order_id} not found or error occurred."
+            }), 404
+        
+        order_amount = float(order_result.get('price', 0))
+        delivery_fee = float(order_result.get('deliveryFee', 0))
+        subtotal = order_amount - delivery_fee
+        payment_status = "PAID"
+
+        order_info = {
+            #"recipient": customer_result.get('email'),
+            "recipient": "chaizheqing2004@gmail.com",  # Hard-code test email
+            "order_id": order_id,
+            "driver_id": driver_id,
+            "subject": "Thanks for your order",
+            "subtotal": f"{subtotal:.2f}",  
+            "payment_status": payment_status,
+            "delivery_fee": f"{delivery_fee:.2f}",  
+            "total": f"{order_amount:.2f}",            
+            "items": [
+                {
+                    "item_name": item.get("name"),
+                    "item_qty": item.get("quantity"),
+                    "item_price": f"{item.get('price', 0):.2f}",
+                    "img_src": item.get('image')
+                }
+                for item in order_result.get("items", [])
+            ]
+        }
+
         print("  Connecting to AMQP broker...")
         connection, channel = amqp_lib.connect(
             hostname=RABBITMQ_HOST,
@@ -141,11 +181,11 @@ def send_notification(driver_id, order_id):
             exchange_type='topic',
         )
 
-        print("  Publishing driver assignment message to notification queue")
+        print("Publishing driver assignment message to notification queue")
         channel.basic_publish(
             exchange='order_topic',
             routing_key='driver.assigned.notification',
-            body=json.dumps(driver_id),
+            body=json.dumps(order_info),
             properties=pika.BasicProperties(delivery_mode=2)
         )
 

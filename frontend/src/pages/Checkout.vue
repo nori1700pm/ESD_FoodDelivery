@@ -257,6 +257,7 @@ const handleSubmit = async () => {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
+        image: item.image,
         restaurant: {
           id: firstItem.restaurantId || firstItem.restaurant?.id,
           name: firstItem.restaurantName || firstItem.restaurant?.name,

@@ -109,6 +109,7 @@ import { storeToRefs } from 'pinia'
 import axios from 'axios'
 
 const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5004'
+const ORDER_SERVICE_URL = 'http://localhost:5001'
 
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
@@ -116,8 +117,6 @@ const { user } = storeToRefs(auth)
 const orders = ref([])
 const loading = ref(true)
 const error = ref(null)
-
-const ORDER_SERVICE_URL = 'http://localhost:5001'
 
 const pollInterval = ref(null)
 //const AUTO_REFRESH_INTERVAL = 10000 // 10 seconds

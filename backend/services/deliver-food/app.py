@@ -27,7 +27,6 @@ EXCHANGE_NAME = "order_topic"
 ORDER_URL = os.environ.get('orderURL') or "http://order-service:5001"
 WALLET_URL = os.environ.get('walletURL') or "http://wallet-service:5002"
 CUSTOMER_URL = os.environ.get('customerURL') or "http://customer-service:4000"
-NOTIFICATION_URL = os.environ.get('notificationURL') or "http://notification-service:6000"
 
 def publish_message(routing_key, message):
     try:

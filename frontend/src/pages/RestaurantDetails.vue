@@ -106,6 +106,7 @@ const handleAddToCart = (menuItem) => {
     id: menuItem.id,
     name: menuItem.name,
     price: menuItem.price,
+    image: menuItem.image,
     restaurantId: restaurant.value.id,
     restaurantName: restaurant.value.name,
     restaurant: {

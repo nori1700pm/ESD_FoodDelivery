@@ -79,7 +79,8 @@ def create_order():
                 'id': item['id'],
                 'name': item['name'],
                 'price': item['price'],
-                'quantity': item['quantity']
+                'quantity': item['quantity'],
+                'image':item['image']
             }
             cleaned_items.append(cleaned_item)
 
@@ -181,7 +182,8 @@ def pay_delivery():
                 'id': item['id'],
                 'name': item['name'],
                 'price': item['price'],
-                'quantity': item['quantity']
+                'quantity': item['quantity'],
+                'image':item['image']
             }
             cleaned_items.append(cleaned_item)
 

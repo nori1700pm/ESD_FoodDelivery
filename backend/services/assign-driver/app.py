@@ -156,8 +156,8 @@ def send_notification(driver_id, order_id, customer_id):
         payment_status = "PAID"
 
         order_info = {
-            #"recipient": customer_result.get('email'),
-            "recipient": "chaizheqing2004@gmail.com",  # Hard-code test email
+            "recipient": customer_result.get('email'),
+            # "recipient": "chaizheqing2004@gmail.com",  
             "order_id": order_id,
             "driver_id": driver_id,
             "subject": "Thanks for your order",
@@ -229,7 +229,7 @@ def assign_driver(order_id):
         # Step 1: Fetch and update driver status
         driver_id, error_response, error_code = fetch_and_update_driver(restaurant_id)
         if error_response and error_code == 404:
-            
+
             # No available drivers - set order to pending and schedule auto-cancellation
             update_order(order_id, None)
             schedule_order_cancellation(order_id)
@@ -375,7 +375,7 @@ def cancel_order(order_id):
                 subtotal = order_amount - delivery_fee
                 # Prepare notification data
                 notification_data = {
-                    "recipient": "chaizheqing2004@gmail.com",  # customer_result.get('email')
+                    "recipient": customer_result.get('email'),  
                     "subject": "Order Cancelled and Refund Processed",
                     "subtotal": f"{subtotal:.2f}",  
                     "payment_status": "REFUNDED",
@@ -451,6 +451,8 @@ def check_and_assign_driver(order_id, restaurant_id):
                     # Update order with the new driver
                     update_order(order_id, driver_id)
                     print(f"Successfully assigned driver {driver_id} to order {order_id}")
+                    send_notification(driver_id, order_id, order_result.get('customerId'))
+
                     break
                     
                 # Wait before checking again

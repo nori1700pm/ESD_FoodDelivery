@@ -3,8 +3,9 @@
     <nav class="bg-white shadow-lg">
       <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-16">
-          <router-link to="/" class="text-2xl font-bold text-blue-600">
-            FoodDelivery
+          <router-link to="/" class="flex items-center">
+            <img src="@/assets/nomnomgo-logo.jpg" alt="NomNomGo Logo" class="h-10 w-auto mr-2">
+            <span class="text-2xl font-bold text-blue-600">NomNomGo</span>
           </router-link>
           
           <div v-if="user" class="flex items-center space-x-4">

@@ -1,164 +1,185 @@
 <template>
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6 flex items-center">
-            <vue-feather type="truck" size="28" class="mr-2" /> Driver Dashboard <div class="flex justify-end p-4">
-                <button @click="takeBreak" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
-                    {{ driverDetails['DriverStatus'] }}
-                </button>
+        <h1 class="text-3xl font-bold mb-6 flex items-center justify-between">
+            <div class="flex items-center">
+                <vue-feather type="truck" size="28" class="mr-2" /> Driver Dashboard
+            </div>
+            <div class="flex items-center">
+                <span class="mr-3 text-sm font-medium text-gray-700">{{ isAvailable ? 'Available' : 'Busy' }}</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input 
+                        type="checkbox" 
+                        v-model="isAvailable" 
+                        class="sr-only peer" 
+                        @change="toggleDriverStatus"
+                    >
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
             </div>
         </h1>
-        <!-- Loading state -->
-        <div v-if="loading" class="flex justify-center items-center h-64">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
 
-        <!-- Error state -->
-        <div v-else-if="error" class="bg-red-100 p-4 rounded-lg mb-6 text-red-700">
-            {{ error }}
-        </div>
-
-        <!-- No active orders state -->
-        <div v-else-if="!activeOrder" class="bg-yellow-50 p-6 rounded-lg shadow-md text-center">
-            <vue-feather type="coffee" size="48" class="mx-auto mb-4 text-yellow-500" />
-            <h2 class="text-2xl font-bold mb-2">No Active Orders</h2>
-            <p class="text-gray-600">You don't have any assigned deliveries at the moment.</p>
-            <p class="text-gray-500 mt-2">Please wait for the system to assign you a delivery.</p>
-        </div>
-
-        <!-- Active order -->
-        <div v-else class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <!-- Order header with restaurant info -->
-            <div class="bg-blue-50 p-5 border-b flex items-start justify-between">
-                <div>
-                    <h2 class="text-xl font-bold mb-1">{{ activeOrder.restaurantName || "Restaurant" }}</h2>
-                    <div class="flex items-center text-blue-600">
-                        <vue-feather type="map-pin" size="16" class="mr-2" />
-                        <p>{{ restaurantDetails.address }}</p>
-                    </div>
-                </div>
-
-                <div :class="`px-3 py-1 rounded-full ${getStatusColor(activeOrder.status)}`">
-                    {{ activeOrder.status }}
-                </div>
+        <!-- Show content only if driver is Available -->
+        <div v-if="isAvailable">
+            <!-- Loading state -->
+            <div v-if="loading" class="flex justify-center items-center h-64">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
 
-            <!-- Restaurant image if available -->
-            <div v-if="restaurantImage" class="h-48 overflow-hidden relative">
-                <img :src="restaurantImage" alt="Restaurant Image" class="w-full object-cover">
+            <!-- Error state -->
+            <div v-else-if="error" class="bg-red-100 p-4 rounded-lg mb-6 text-red-700">
+                {{ error }}
             </div>
 
-            <!-- Customer details section -->
-            <div class="p-5 border-b">
-                <h3 class="font-bold mb-3 flex items-center">
-                    <vue-feather type="user" size="18" class="mr-2" />
-                    Delivery Information
-                </h3>
-
-                <div class="flex items-start mb-4">
-                    <vue-feather type="map-pin" size="18" class="mr-3 mt-1 flex-shrink-0" />
-                    <div>
-                        <h4 class="font-semibold">Delivery Address</h4>
-                        <p class="text-gray-700">{{ activeOrder.deliveryAddress }}</p>
-                    </div>
-                </div>
-
-                <div class="flex items-start mb-4">
-                    <vue-feather type="clock" size="18" class="mr-3 mt-1 flex-shrink-0" />
-                    <div>
-                        <h4 class="font-semibold">Order Time</h4>
-                        <p class="text-gray-700">{{ formatDate(activeOrder.createdAt) }}</p>
-                    </div>
-                </div>
-
-                <div class="flex items-start">
-                    <vue-feather type="hash" size="18" class="mr-3 mt-1 flex-shrink-0" />
-                    <div>
-                        <h4 class="font-semibold">Order ID</h4>
-                        <p class="text-gray-700">{{ activeOrder.orderId }}</p>
-                    </div>
-                </div>
+            <!-- No active orders state -->
+            <div v-else-if="!activeOrder" class="bg-yellow-50 p-6 rounded-lg shadow-md text-center">
+                <vue-feather type="coffee" size="48" class="mx-auto mb-4 text-yellow-500" />
+                <h2 class="text-2xl font-bold mb-2">No Active Orders</h2>
+                <p class="text-gray-600">You don't have any assigned deliveries at the moment.</p>
+                <p class="text-gray-500 mt-2">Please wait for the system to assign you a delivery.</p>
             </div>
 
-            <!-- Order items -->
-            <div class="p-5 border-b">
-                <h3 class="font-bold mb-3">Order Items</h3>
-                <ul class="divide-y">
-                    <li v-for="item in activeOrder.items" :key="item.id" class="py-3 flex justify-between">
-                        <div>
-                            <span class="font-medium">{{ item.name }}</span>
-                            <span class="text-gray-500 ml-2">x{{ item.quantity }}</span>
+            <!-- Active order -->
+            <div v-else class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <!-- Order header with restaurant info -->
+                <div class="bg-blue-50 p-5 border-b flex items-start justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold mb-1">{{ activeOrder.restaurantName || "Restaurant" }}</h2>
+                        <div class="flex items-center text-blue-600">
+                            <vue-feather type="map-pin" size="16" class="mr-2" />
+                            <p>{{ restaurantDetails.address }}</p>
                         </div>
-                        <span>${{ (item.price * item.quantity).toFixed(2) }}</span>
-                    </li>
-                </ul>
-            </div>
+                    </div>
 
-            <!-- Order totals -->
-            <div class="p-5 bg-gray-50">
-                <div class="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>${{ activeOrder.price.toFixed(2) }}</span>
+                    <div :class="`px-3 py-1 rounded-full ${getStatusColor(activeOrder.status)}`">
+                        {{ activeOrder.status }}
+                    </div>
+                </div>
+
+                <!-- Restaurant image if available -->
+                <div v-if="restaurantImage" class="h-48 overflow-hidden relative">
+                    <img :src="restaurantImage" alt="Restaurant Image" class="w-full object-cover">
+                </div>
+
+                <!-- Customer details section -->
+                <div class="p-5 border-b">
+                    <h3 class="font-bold mb-3 flex items-center">
+                        <vue-feather type="user" size="18" class="mr-2" />
+                        Delivery Information
+                    </h3>
+
+                    <div class="flex items-start mb-4">
+                        <vue-feather type="map-pin" size="18" class="mr-3 mt-1 flex-shrink-0" />
+                        <div>
+                            <h4 class="font-semibold">Delivery Address</h4>
+                            <p class="text-gray-700">{{ activeOrder.deliveryAddress }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start mb-4">
+                        <vue-feather type="clock" size="18" class="mr-3 mt-1 flex-shrink-0" />
+                        <div>
+                            <h4 class="font-semibold">Order Time</h4>
+                            <p class="text-gray-700">{{ formatDate(activeOrder.createdAt) }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start">
+                        <vue-feather type="hash" size="18" class="mr-3 mt-1 flex-shrink-0" />
+                        <div>
+                            <h4 class="font-semibold">Order ID</h4>
+                            <p class="text-gray-700">{{ activeOrder.orderId }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order items -->
+                <div class="p-5 border-b">
+                    <h3 class="font-bold mb-3">Order Items</h3>
+                    <ul class="divide-y">
+                        <li v-for="item in activeOrder.items" :key="item.id" class="py-3 flex justify-between">
+                            <div>
+                                <span class="font-medium">{{ item.name }}</span>
+                                <span class="text-gray-500 ml-2">x{{ item.quantity }}</span>
+                            </div>
+                            <span>${{ (item.price * item.quantity).toFixed(2) }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Order totals -->
+                <div class="p-5 bg-gray-50">
+                    <div class="flex justify-between font-bold text-lg">
+                        <span>Total</span>
+                        <span>${{ activeOrder.price.toFixed(2) }}</span>
+                    </div>
+                </div>
+
+                <!-- Customer info -->
+                <div class="p-5 border-t">
+                    <h3 class="font-bold mb-3 flex items-center">
+                        <vue-feather type="user" size="18" class="mr-2" />
+                        Customer Information
+                    </h3>
+                    <div v-if="customerInfo" class="space-y-2">
+                        <p><span class="font-semibold">Name:</span> {{ customerInfo.name }}</p>
+                        <p><span class="font-semibold">Email:</span> {{ customerInfo.email }}</p>
+                        <p v-if="customerInfo.phone"><span class="font-semibold">Phone:</span> {{ customerInfo.phone }}</p>
+                    </div>
+                    <div v-else class="italic text-gray-500">Customer information not available</div>
+                </div>
+
+                <!-- Delivery actions -->
+                <!-- Delivery actions -->
+                <div class="p-5 border-t">
+                    <h3 class="font-bold mb-3">Delivery Status</h3>
+                    <div class="flex space-x-4">
+                        <!-- Start Delivery button - shows when status is PREPARING -->
+                        <button v-if="activeOrder.status === 'PREPARING'" @click="updateOrderStatus('READY FOR PICKUP')"
+                            class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
+                            Start Delivery
+                        </button>
+
+                        <!-- Reject Delivery button - shows only when status is PREPARING -->
+                        <button v-if="activeOrder.status === 'PREPARING'" @click="rejectDelivery"
+                            class="flex-1 bg-gray-600 text-white p-3 rounded-md hover:bg-gray-700">
+                            Reject Delivery
+                        </button>
+
+                        <!-- Pick Up Order button - shows when status is READY FOR PICKUP -->
+                        <button v-if="activeOrder.status === 'READY FOR PICKUP'"
+                            @click="updateOrderStatus('OUT FOR DELIVERY')"
+                            class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
+                            Picked up order
+                        </button>
+
+                        <!-- Complete Delivery button - shows when status is OUT FOR DELIVERY -->
+                        <button v-if="activeOrder.status === 'OUT FOR DELIVERY'" @click="updateOrderStatus('DELIVERED')"
+                            class="flex-1 bg-green-600 text-white p-3 rounded-md hover:bg-green-700">
+                            Complete Delivery
+                        </button>
+
+                        <!-- Cancel Delivery button - shows when status is READY FOR PICKUP or OUT FOR DELIVERY -->
+                        <button v-if="['READY FOR PICKUP', 'OUT FOR DELIVERY'].includes(activeOrder.status)"
+                            @click="cancelDelivery" class="flex-1 bg-red-600 text-white p-3 rounded-md hover:bg-red-700">
+                            Cancel Delivery
+                        </button>
+
+                    </div>
                 </div>
             </div>
-
-            <!-- Customer info -->
-            <div class="p-5 border-t">
-                <h3 class="font-bold mb-3 flex items-center">
-                    <vue-feather type="user" size="18" class="mr-2" />
-                    Customer Information
-                </h3>
-                <div v-if="customerInfo" class="space-y-2">
-                    <p><span class="font-semibold">Name:</span> {{ customerInfo.name }}</p>
-                    <p><span class="font-semibold">Email:</span> {{ customerInfo.email }}</p>
-                    <p v-if="customerInfo.phone"><span class="font-semibold">Phone:</span> {{ customerInfo.phone }}</p>
-                </div>
-                <div v-else class="italic text-gray-500">Customer information not available</div>
-            </div>
-
-            <!-- Delivery actions -->
-            <!-- Delivery actions -->
-            <div class="p-5 border-t">
-                <h3 class="font-bold mb-3">Delivery Status</h3>
-                <div class="flex space-x-4">
-                    <!-- Start Delivery button - shows when status is PREPARING -->
-                    <button v-if="activeOrder.status === 'PREPARING'" @click="updateOrderStatus('READY FOR PICKUP')"
-                        class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
-                        Start Delivery
-                    </button>
-
-                    <!-- Reject Delivery button - shows only when status is PREPARING -->
-                    <button v-if="activeOrder.status === 'PREPARING'" @click="rejectDelivery"
-                        class="flex-1 bg-gray-600 text-white p-3 rounded-md hover:bg-gray-700">
-                        Reject Delivery
-                    </button>
-
-                    <!-- Pick Up Order button - shows when status is READY FOR PICKUP -->
-                    <button v-if="activeOrder.status === 'READY FOR PICKUP'"
-                        @click="updateOrderStatus('OUT FOR DELIVERY')"
-                        class="flex-1 bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700">
-                        Picked up order
-                    </button>
-
-                    <!-- Complete Delivery button - shows when status is OUT FOR DELIVERY -->
-                    <button v-if="activeOrder.status === 'OUT FOR DELIVERY'" @click="updateOrderStatus('DELIVERED')"
-                        class="flex-1 bg-green-600 text-white p-3 rounded-md hover:bg-green-700">
-                        Complete Delivery
-                    </button>
-
-                    <!-- Cancel Delivery button - shows when status is READY FOR PICKUP or OUT FOR DELIVERY -->
-                    <button v-if="['READY FOR PICKUP', 'OUT FOR DELIVERY'].includes(activeOrder.status)"
-                        @click="cancelDelivery" class="flex-1 bg-red-600 text-white p-3 rounded-md hover:bg-red-700">
-                        Cancel Delivery
-                    </button>
-
-                </div>
-            </div>
+        </div>
+        
+        <!-- Message when driver is Busy -->
+        <div v-else class="bg-gray-50 p-6 rounded-lg shadow-md text-center mt-4">
+            <vue-feather type="moon" size="48" class="mx-auto mb-4 text-gray-500" />
+            <h2 class="text-2xl font-bold mb-2">You're Currently Offline</h2>
+            <p class="text-gray-600">Toggle the switch above to become available for deliveries.</p>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { storeToRefs } from 'pinia'
 import axios from 'axios'
@@ -304,43 +325,49 @@ const fetchCustomerInfo = async (customerId) => {
     }
 }
 
-const takeBreak = async (driverId) => {
-    try {
-        if (driverDetails.value.DriverStatus == "Available") {
-            const driverResponse = await axios.put(
-                `${DRIVER_SERVICE_URL}/drivers`,
-                {
-                    "DriverId": driverId.value,
-                    "DriverStatus": "Busy",
-                    "DriverName": driverDetails.value.DriverName,
-                    "DriverNumber": driverDetails.value.DriverNumber,
-                    "DriverLocation": driverDetails.value.DriverLocation,
-                    "DriverEmail": driverDetails.value.DriverEmail
-                }
-            )
-            location.reload();
-            console.log('Driver status updated:', driverResponse.data)
-            
-        } else {
-            const driverResponse = await axios.put(
-                `${DRIVER_SERVICE_URL}/drivers`,
-                {
-                    "DriverId": driverId.value,
-                    "DriverStatus": "Available",
-                    "DriverName": driverDetails.value.DriverName,
-                    "DriverNumber": driverDetails.value.DriverNumber,
-                    "DriverLocation": driverDetails.value.DriverLocation,
-                    "DriverEmail": driverDetails.value.DriverEmail
-                }
-            )
-            location.reload();
-            console.log('Driver status updated:', driverResponse.data)
-            
-        }
+// Add a computed property to determine if driver is available
+const isAvailable = computed({
+    get: () => {
+        return driverDetails.value.DriverStatus?.toLowerCase() === 'available'
+    },
+    set: (value) => {
+        // This will be triggered by v-model
+        driverDetails.value.DriverStatus = value ? 'Available' : 'Busy'
+    }
+})
 
-    } catch (driverErr) {
-        console.error('Error updating driver status:', driverErr)
-        throw new Error('Failed to make offline')
+// Replace the takeBreak function with toggleDriverStatus
+const toggleDriverStatus = async () => {
+    try {
+        loading.value = true
+        const status = isAvailable.value ? 'Available' : 'Busy'
+        
+        const driverResponse = await axios.put(
+            `${DRIVER_SERVICE_URL}/drivers`,
+            {
+                "DriverId": driverId.value,
+                "DriverStatus": status,
+                "DriverName": driverDetails.value.DriverName,
+                "DriverNumber": driverDetails.value.DriverNumber,
+                "DriverLocation": driverDetails.value.DriverLocation,
+                "DriverEmail": driverDetails.value.DriverEmail
+            }
+        )
+        
+        console.log('Driver status updated:', driverResponse.data)
+        
+        // Refresh orders if the driver becomes available
+        if (isAvailable.value) {
+            await fetchAllOrders()
+        }
+    } catch (err) {
+        console.error('Error updating driver status:', err)
+        error.value = `Failed to update availability: ${err.message}`
+        
+        // Revert the toggle if there was an error
+        isAvailable.value = !isAvailable.value
+    } finally {
+        loading.value = false
     }
 }
 

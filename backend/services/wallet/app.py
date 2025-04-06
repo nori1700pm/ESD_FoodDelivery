@@ -5,7 +5,6 @@ from firebase_admin import credentials, firestore, initialize_app
 import uuid
 from flask_cors import CORS
 import traceback  
-import rabbitmq.amqp_lib as amqp_lib
 import pika
 
 
@@ -19,40 +18,7 @@ firebase_config_dict = json.loads(firebase_config)
 cred = credentials.Certificate(firebase_config_dict)
 initialize_app(cred)
 db = firestore.client()
-RABBITMQ_PORT = int(os.environ.get('RABBITMQ_PORT', 5672))
-RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
 PORT = int(os.environ.get('PORT', 5002)) 
-
-exchange_name = "order_topic"
-exchange_type = "topic"
-queue_name = "error_queue"  # Changed from "Error" to be consistent
-
-# RabbitMQ setup
-def send_error_to_queue(error_details):
-    try:
-        print("  Connecting to AMQP broker...")
-        connection, channel = amqp_lib.connect(
-            hostname=RABBITMQ_HOST,
-            port=RABBITMQ_PORT,
-            exchange_name='order_topic',
-            exchange_type='topic',
-        )
-
-        print("  Publishing error message to queue...")
-        channel.basic_publish(
-            exchange='order_topic',
-            routing_key='wallet.payment.error',
-            body=json.dumps(error_details),
-            properties=pika.BasicProperties(delivery_mode=2)
-        )
-
-        connection.close()
-        print("  Error message sent successfully")
-        return True
-
-    except Exception as e:
-        print(f"  ❌ Failed to send error to queue: {str(e)}")
-        return False
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -104,7 +70,7 @@ def process_payment(customer_id):
             error_details = {
                 'errorId': str(uuid.uuid4()),
                 'orderId': order_id,
-                'recipient': data.get('custEmail'),
+                'recipient': "chaizheqing2004@gmail.com", #data.get('custEmail'),
                 'subject': 'Insufficient Wallet Balance',
                 'subtotal': data.get('subtotal'),
                 'payment_status': 'UNPAID',
@@ -115,10 +81,8 @@ def process_payment(customer_id):
                     Please top up your wallet balance before proceeding.
                     """
             }
-            print("Attempting sending error to queue")
-            send_error_to_queue(error_details)
             return jsonify({
-                'error': 'Insufficient balance',
+                'error': error_details,
                 'currentBalance': current_balance,
                 'required': amount
             }), 400
@@ -154,7 +118,6 @@ def process_payment(customer_id):
                 'orderId': order_id,
                 'message': f'Transaction failed: {str(e)}'
             }
-            send_error_to_queue(error_details)
             return jsonify({'error': str(e)}), 400
 
         return jsonify({
@@ -170,7 +133,6 @@ def process_payment(customer_id):
             'orderId': order_id if 'order_id' in locals() else None,
             'message': f'Payment processing error: {str(e)}'
         }
-        send_error_to_queue(error_details)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/wallet/<customer_id>', methods=['PUT'])

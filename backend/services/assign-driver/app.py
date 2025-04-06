@@ -125,8 +125,8 @@ def update_order(order_id, driver_id):
         return {"message": f"Error updating order: {str(e)}"}, 500
 
 
-# RabbitMQ setup
-def send_notification(driver_id, order_id): 
+# RabbitMQ  - for successful driver assignment
+def send_notification(driver_id, order_id, customer_id): 
     try:
         print(f"\n=== Retrieving order {order_id} ===")
         order_result = invoke_http(
@@ -134,6 +134,14 @@ def send_notification(driver_id, order_id):
             method="GET"
         )
         print("Order result:", order_result)
+
+        # Get customer details
+        print(f"\nFetching customer details from {CUSTOMER_URL}/customers/{customer_id}")
+        customer_result = invoke_http(
+            f"{CUSTOMER_URL}/customers/{customer_id}",
+            method="GET"
+        )
+        print("Customer result:", customer_result)
         
         if not order_result or 'error' in order_result:
             print(f"Order not found or error: {order_result}")
@@ -149,7 +157,7 @@ def send_notification(driver_id, order_id):
 
         order_info = {
             #"recipient": customer_result.get('email'),
-            "recipient": "tabithasim223@gmail.com",  # Hard-code test email
+            "recipient": "chaizheqing2004@gmail.com",  # Hard-code test email
             "order_id": order_id,
             "driver_id": driver_id,
             "subject": "Thanks for your order",
@@ -221,6 +229,7 @@ def assign_driver(order_id):
         # Step 1: Fetch and update driver status
         driver_id, error_response, error_code = fetch_and_update_driver(restaurant_id)
         if error_response and error_code == 404:
+            
             # No available drivers - set order to pending and schedule auto-cancellation
             update_order(order_id, None)
             schedule_order_cancellation(order_id)
@@ -244,9 +253,7 @@ def assign_driver(order_id):
             }), 500
         
         # Step 3: Send notification 
-        send_notification(driver_id, order_id)
-        if driver_id:
-            send_notification(driver_id, order_id)
+        send_notification(driver_id, order_id, order_details.get('customerId'))
         
         return jsonify({
             "code": 200,
@@ -368,7 +375,7 @@ def cancel_order(order_id):
                 subtotal = order_amount - delivery_fee
                 # Prepare notification data
                 notification_data = {
-                    "recipient": "tabithasim223@gmail.com",  # Hard-code test email
+                    "recipient": "chaizheqing2004@gmail.com",  # customer_result.get('email')
                     "subject": "Order Cancelled and Refund Processed",
                     "subtotal": f"{subtotal:.2f}",  
                     "payment_status": "REFUNDED",

@@ -7,6 +7,7 @@ from firebase_admin import credentials, firestore, initialize_app
 import pika
 from datetime import datetime
 import pytz
+import rabbitmq.amqp_lib as amqp_lib
 
 app = Flask(__name__)
 CORS(app)
@@ -30,29 +31,20 @@ CUSTOMER_URL = os.environ.get('customerURL') or "http://customer-service:4000"
 
 def publish_message(routing_key, message):
     try:
-        # Connect to RabbitMQ
-        credentials = pika.PlainCredentials('guest', 'guest')
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=RABBITMQ_HOST,
-                port=RABBITMQ_PORT,
-                credentials=credentials
-            )
-        )
-        channel = connection.channel()
-        
-        # Declare the exchange
-        channel.exchange_declare(
-            exchange=EXCHANGE_NAME,
+        print("  Connecting to AMQP broker...")
+        connection, channel = amqp_lib.connect(
+            hostname=RABBITMQ_HOST,
+            port=RABBITMQ_PORT,
+            exchange_name='order_topic',
             exchange_type='topic',
-            durable=True
         )
         
         # Publish the message
         channel.basic_publish(
             exchange=EXCHANGE_NAME,
             routing_key=routing_key,
-            body=json.dumps(message)
+            body=json.dumps(message),
+            properties=pika.BasicProperties(delivery_mode=2)
         )
         
         connection.close()
@@ -170,7 +162,7 @@ def cancel_order(order_id):
                 # Prepare notification data
                 notification_data = {
                     #"recipient": customer_result.get('email'),
-                    "recipient": "tabithasim223@gmail.com",  # Hard-code test email
+                    "recipient": "chaizheqing2004@gmail.com",  # Hard-code test email
                     "subject": "Order Cancelled and Refund Processed",
                     "subtotal": f"{subtotal:.2f}",  
                     "payment_status": payment_status,

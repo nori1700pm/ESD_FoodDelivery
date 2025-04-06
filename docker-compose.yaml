@@ -20,8 +20,8 @@ services:
 
   pay-for-delivery:
     build: 
-      context: ./backend/services/pay-for-delivery
-      dockerfile: Dockerfile
+      context: ./backend/services
+      dockerfile: pay-for-delivery/Dockerfile
     ports:
       - "5004:5004"
     environment:
@@ -31,6 +31,7 @@ services:
       - customerURL=http://customer-service:4000
       - assignDriverURL=http://assign-driver:5006 
       - PORT=5004
+      - PYTHONPATH=/app
     networks:
       - app-network
     depends_on:
@@ -130,8 +131,8 @@ services:
 
   deliver-food:
     build: 
-      context: ./backend/services/deliver-food
-      dockerfile: Dockerfile
+      context: ./backend/services
+      dockerfile: deliver-food/Dockerfile
     ports:
       - "5005:5005"
     environment:
@@ -143,7 +144,7 @@ services:
       - orderURL=http://order-service:5001
       - walletURL=http://wallet-service:5002
       - customerURL=http://customer-service:4000
-      - notificationURL=http://notification-service:6000 
+      - PYTHONPATH=/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
       interval: 30s

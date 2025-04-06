@@ -23,10 +23,12 @@ def callback(channel, method, properties, body):
         personalization.add_to(To(recipient_email)) 
 
         base_data = {
-            "subtotal": message_data.get('subtotal'),
-            "delivery_fee": message_data.get('delivery_fee'),
-            "total": message_data.get("total"),
+            "subject": message_data.get("subject"),
+            "subtotal": round(float(message_data.get('subtotal', 0)), 2),
+            "delivery_fee": round(float(message_data.get('delivery_fee', 0)), 2),
+            "total": round(float(message_data.get('total', 0)), 2),
         }
+
 
         # Check message type based on routing key and payment status (filter here)
 
@@ -48,10 +50,10 @@ def callback(channel, method, properties, body):
 
             message.template_id = 'd-2a1e47b9a8b944c5a79fc1883a089cbf'
 
+        # Successful driver assigned
         elif method.routing_key == "driver.assigned.notification":
             base_data.update({
-                "payment_status": message_data.get('payment_status'),
-                "items": message_data.get('items', []),
+                "items": message_data.get('items', [])
             })
 
             message.template_id = 'd-5aea4bf87a9f4737a69f8c42851049c2'

@@ -58,7 +58,7 @@ def send_error_notification(error_details):
         return True
 
     except Exception as e:
-        print(f"  ❌ Failed to send error to queue: {str(e)}")
+        print(f"Failed to send error to queue: {str(e)}")
         return False
 
 
@@ -201,7 +201,7 @@ def pay_delivery():
             # Payment failed - return error message
             print("Returning response:", wallet_result)
 
-            # Send insufficient balance notification
+            # Publishes error to queue, message consumed by error and notification
             send_error_notification(wallet_result.get('error'))
 
             return jsonify({

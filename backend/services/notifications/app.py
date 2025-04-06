@@ -53,7 +53,8 @@ def callback(channel, method, properties, body):
         # Successful driver assigned
         elif method.routing_key == "driver.assigned.notification":
             base_data.update({
-                "items": message_data.get('items', [])
+                "items": message_data.get('items', []),
+                "order_ID": message_data.get("order_id")
             })
 
             message.template_id = 'd-5aea4bf87a9f4737a69f8c42851049c2'

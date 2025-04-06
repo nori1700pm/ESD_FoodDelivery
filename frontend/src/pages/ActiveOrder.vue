@@ -129,7 +129,6 @@
                 </div>
 
                 <!-- Delivery actions -->
-                <!-- Delivery actions -->
                 <div class="p-5 border-t">
                     <h3 class="font-bold mb-3">Delivery Status</h3>
                     <div class="flex space-x-4">
@@ -485,7 +484,8 @@ const formatDate = (timestamp) => {
 const rejectDelivery = async () => {
     if (!activeOrder.value) return
 
-    const confirmed = window.confirm(
+    // might want to change from window alert (but only if have time)
+    const confirmed = window.confirm( 
         'Are you sure you want to reject this delivery? This action cannot be undone.'
     )
     if (!confirmed) return

@@ -75,7 +75,8 @@
         </div>
 
         <button @click="handleSubmit" :disabled="loading"
-          class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:bg-blue-300">
+          class="w-full bg-blue-600 text-white p-3 rounded-md hover:bg-blue-700 disabled:bg-blue-300 flex items-center justify-center">
+          <loading-spinner v-if="loading" type="spinner" size="small" :showText="false" class="mr-2" />
           {{ loading ? 'Processing...' : 'Place Order' }}
         </button>
       </div>
@@ -91,6 +92,7 @@ import { storeToRefs } from 'pinia'
 import VueFeather from 'vue-feather'
 import { useCartStore } from '../stores/cart'
 import axios from 'axios'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

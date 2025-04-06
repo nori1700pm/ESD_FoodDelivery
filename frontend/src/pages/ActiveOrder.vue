@@ -4,9 +4,15 @@
             <div class="flex items-center">
                 <vue-feather type="truck" size="28" class="mr-2" /> Driver Dashboard
             </div>
+            <!-- Only show toggle if driver doesn't have an active order and is not in cooldown -->
             <div class="flex items-center">
-                <span class="mr-3 text-sm font-medium text-gray-700">{{ isAvailable ? 'Available' : 'Busy' }}</span>
-                <label class="relative inline-flex items-center cursor-pointer">
+                <span v-if="isInCooldown" class="mr-3 text-sm font-medium text-orange-600">
+                    Cooldown: {{ cooldownTimeRemaining }}
+                </span>
+                <span v-else class="mr-3 text-sm font-medium text-gray-700">
+                    {{ !activeOrder ? (isAvailable ? 'Available' : 'Busy') : 'On Delivery' }}
+                </span>
+                <label v-if="!activeOrder && !isInCooldown" class="relative inline-flex items-center cursor-pointer">
                     <input 
                         type="checkbox" 
                         v-model="isAvailable" 
@@ -18,11 +24,11 @@
             </div>
         </h1>
 
-        <!-- Show content only if driver is Available -->
-        <div v-if="isAvailable">
+        <!-- Show content based on driver's status -->
+        <div v-if="isAvailable || activeOrder">
             <!-- Loading state -->
             <div v-if="loading" class="flex justify-center items-center h-64">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <loading-spinner size="large" />
             </div>
 
             <!-- Error state -->
@@ -169,6 +175,12 @@
         </div>
         
         <!-- Message when driver is Busy -->
+        <div v-else-if="isInCooldown" class="bg-orange-50 p-6 rounded-lg shadow-md text-center mt-4">
+            <vue-feather type="clock" size="48" class="mx-auto mb-4 text-orange-500" />
+            <h2 class="text-2xl font-bold mb-2">Cooldown Period</h2>
+            <p class="text-gray-600">You recently rejected an order. You'll be available for new deliveries in {{ cooldownTimeRemaining }}.</p>
+        </div>
+        
         <div v-else class="bg-gray-50 p-6 rounded-lg shadow-md text-center mt-4">
             <vue-feather type="moon" size="48" class="mx-auto mb-4 text-gray-500" />
             <h2 class="text-2xl font-bold mb-2">You're Currently Offline</h2>
@@ -185,6 +197,7 @@ import axios from 'axios'
 import { db } from '@/config/firebase'
 import { doc, getDoc } from "firebase/firestore"
 import VueFeather from 'vue-feather'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const orders = ref([])
 const activeOrder = ref(null)
@@ -324,19 +337,46 @@ const fetchCustomerInfo = async (customerId) => {
     }
 }
 
-// Add a computed property to determine if driver is available
+// Add cooldown tracking
+const cooldownEnd = ref(null)
+const cooldownCheckInterval = ref(null)
+// Add a real-time counter for display
+const currentCooldownDisplay = ref('')
+
+// Add computed property to check if driver is in cooldown
+const isInCooldown = computed(() => {
+    if (!cooldownEnd.value) return false
+    return new Date() < cooldownEnd.value
+})
+
+// Replace the computed property with a ref that gets updated by the timer
+const cooldownTimeRemaining = computed(() => currentCooldownDisplay.value)
+
+// Add a computed property to determine if driver is available - now respects cooldown
 const isAvailable = computed({
     get: () => {
+        // If in cooldown, always return false
+        if (isInCooldown.value) return false
         return driverDetails.value.DriverStatus?.toLowerCase() === 'available'
     },
     set: (value) => {
-        // This will be triggered by v-model
+        // If in cooldown and trying to set to available, don't allow it
+        if (isInCooldown.value && value) return
+        
+        // Otherwise update as normal
         driverDetails.value.DriverStatus = value ? 'Available' : 'Busy'
     }
 })
 
-// Replace the takeBreak function with toggleDriverStatus
+// Modify toggleDriverStatus to respect cooldown more strictly
 const toggleDriverStatus = async () => {
+    // If in cooldown, prevent any toggling
+    if (isInCooldown.value) {
+        // Force the UI state to match reality - driver is busy during cooldown
+        driverDetails.value.DriverStatus = 'Busy'
+        return
+    }
+    
     try {
         loading.value = true
         const status = isAvailable.value ? 'Available' : 'Busy'
@@ -441,6 +481,8 @@ const getStatusColor = (status) => {
     }
 }
 
+// Improve the cooldown timer to update every second
+const cooldownTimer = ref(null)
 
 const formatDate = (timestamp) => {
     try {
@@ -481,6 +523,7 @@ const formatDate = (timestamp) => {
     }
 }
 
+// Update rejectDelivery to rely on the backend for cooldown
 const rejectDelivery = async () => {
     if (!activeOrder.value) return
 
@@ -503,7 +546,17 @@ const rejectDelivery = async () => {
 
         if (response.data.code === 200) {
             window.alert('Delivery rejected successfully. Finding new driver.')
-
+            
+            // Set cooldown to 5 minutes from now - THE BACKEND ALREADY HANDLES THIS
+            // We just need the UI to show the cooldown
+            cooldownEnd.value = new Date(Date.now() + 5 * 60 * 1000)
+            
+            // Start the cooldown timer for UI display only
+            startCooldownTimer()
+            
+            // Update local driver status
+            driverDetails.value.DriverStatus = 'Busy'
+            
             await fetchAllOrders()
         } else {
             throw new Error(response.data.message || 'Failed to reject delivery')
@@ -518,45 +571,70 @@ const rejectDelivery = async () => {
     }
 }
 
-const cancelDelivery = async () => {
-    if (!activeOrder.value) return;
-
-    const confirmed = window.confirm(
-        'Are you sure you want to cancel this delivery? This action cannot be undone and the customer will be refunded.'
-    );
-    if (!confirmed) return;
-
-    try {
-        loading.value = true;
-        error.value = null;
-
-        console.log('Cancelling delivery for order:', activeOrder.value.orderId);
-
-        // Call the delivery-food composite service
-        const response = await axios.post(
-            `${DELIVERY_FOOD_SERVICE_URL}/deliver-food/cancel/${activeOrder.value.orderId}`
-        );
-
-        console.log('Cancel delivery response:', response.data);
-
-        if (response.data.code === 200) {
-            // Show success message
-            window.alert('Delivery cancelled successfully. Customer has been notified and refunded.');
-            // Refresh order data
-            await fetchAllOrders();
-        } else {
-            throw new Error(response.data.message || 'Failed to cancel delivery');
-        }
-
-    } catch (err) {
-        console.error('Error cancelling delivery:', err);
-        error.value = `Failed to cancel delivery: ${err.response?.data?.message || err.message}`;
-        window.alert(`Failed to cancel delivery: ${err.response?.data?.message || err.message}`);
-    } finally {
-        loading.value = false;
+// Modified cooldown timer - now only handles UI display
+const startCooldownTimer = () => {
+    // Clear any existing timer
+    if (cooldownTimer.value) {
+        clearInterval(cooldownTimer.value)
     }
-};
+    
+    // Update the cooldown time remaining immediately
+    updateCooldownTimeRemaining()
+    
+    // Set an interval to update the cooldown time every second for display purposes
+    cooldownTimer.value = setInterval(() => {
+        updateCooldownTimeRemaining()
+        
+        // If cooldown has expired in the UI
+        if (!isInCooldown.value) {
+            clearInterval(cooldownTimer.value)
+            cooldownTimer.value = null
+            
+            // Just refresh driver status from the backend
+            // The backend has already set the driver to Available
+            refreshDriverStatus()
+        }
+    }, 1000)
+}
 
+// Function to update the cooldown time remaining (display only)
+const updateCooldownTimeRemaining = () => {
+    if (!cooldownEnd.value) {
+        currentCooldownDisplay.value = ''
+        return
+    }
+    
+    const now = new Date()
+    const remainingMs = cooldownEnd.value - now
+    
+    // If cooldown has expired, reset it
+    if (remainingMs <= 0) {
+        cooldownEnd.value = null
+        currentCooldownDisplay.value = ''
+        return
+    }
+    
+    // Update the display string
+    const minutes = Math.floor(remainingMs / 60000)
+    const seconds = Math.floor((remainingMs % 60000) / 1000)
+    currentCooldownDisplay.value = `${minutes}m ${seconds}s`
+}
+
+// New function that just refreshes driver data from backend
+const refreshDriverStatus = async () => {
+    try {
+        if (user.value && user.value.email) {
+            await fetchDriverInfo(user.value.email)
+        }
+        await fetchAllOrders()
+    } catch (err) {
+        console.error('Error refreshing driver status:', err)
+    }
+}
+
+// Remove updateDriverStatusAfterCooldown - the backend handles this now
+// We're replacing this with the simpler refreshDriverStatus
+// No need to send a PUT request from the frontend
 
 // Set up auto-refresh to check for newly assigned orders
 const AUTO_REFRESH_INTERVAL = 30000 // 30 seconds
@@ -577,7 +655,22 @@ const stopPolling = () => {
     }
 }
 
+// Update onMounted to also fetch driver status on mount
 onMounted(() => {
+    // Check if there's a stored cooldown in localStorage
+    const storedCooldown = localStorage.getItem('driverCooldownEnd')
+    if (storedCooldown) {
+        const endTime = new Date(storedCooldown)
+        // Only set cooldown if it's in the future
+        if (endTime > new Date()) {
+            cooldownEnd.value = endTime
+            startCooldownTimer()
+        } else {
+            // Clear expired cooldown
+            localStorage.removeItem('driverCooldownEnd')
+        }
+    }
+    
     // Ensure the fetch functions are called once the component is mounted
     if (user.value && user.value.email) {
         fetchDriverInfo(user.value.email)
@@ -586,8 +679,30 @@ onMounted(() => {
     startPolling()
 })
 
+// Update watch for cooldownEnd to persist it
+watch(cooldownEnd, (newValue) => {
+    if (newValue) {
+        localStorage.setItem('driverCooldownEnd', newValue.toISOString())
+    } else {
+        localStorage.removeItem('driverCooldownEnd')
+    }
+})
+
+// Update onUnmounted to clean up the cooldown timer
 onUnmounted(() => {
     // Clean up the polling interval when component is destroyed
     stopPolling()
+    
+    // Clean up cooldown timer
+    if (cooldownTimer.value) {
+        clearInterval(cooldownTimer.value)
+        cooldownTimer.value = null
+    }
+    
+    // Clean up cooldown check interval
+    if (cooldownCheckInterval.value) {
+        clearInterval(cooldownCheckInterval.value)
+        cooldownCheckInterval.value = null
+    }
 })
 </script>

@@ -1,7 +1,7 @@
 <template>
   <!-- loading animation while fetching orders ; error if fetchOrders failed -->
   <div v-if="loading" class="flex justify-center items-center h-64">
-    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <loading-spinner size="large" />
   </div>
 
   <div v-else-if="error" class="text-center py-10">
@@ -107,6 +107,7 @@ import { useAuthStore } from '../stores/auth'
 import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
 import axios from 'axios'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const PAY_DELIVERY_SERVICE_URL = 'http://localhost:8000'
 const ORDER_SERVICE_URL = 'http://localhost:8000'

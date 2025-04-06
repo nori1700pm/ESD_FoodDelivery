@@ -1,9 +1,15 @@
 <template>
   <div>
+    <!-- Personalized Call to Action - Removed background styling -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">What would you like to eat today, {{ profile?.name || 'there' }}?</h1>
+      <p class="text-gray-600 mt-2">Browse our selection of restaurants and cuisines below.</p>
+    </div>
+
     <h1 class="text-3xl font-bold mb-6">Restaurants</h1>
 
-    <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div v-if="loading" class="flex justify-center items-center py-20">
+      <loading-spinner size="large" />
     </div>
 
     <div v-else-if="error" class="text-center py-10">
@@ -53,13 +59,56 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
+import { useAuthStore } from '../stores/auth'
+import { storeToRefs } from 'pinia'
+import axios from 'axios'
 
 const restaurants = ref([])
 const loading = ref(true)
 const error = ref(null)
+const profile = ref(null)
+
+const auth = useAuthStore()
+const { user } = storeToRefs(auth)
+
+// Try to load profile from localStorage first for immediate display
+const cachedProfile = localStorage.getItem('userProfile')
+if (cachedProfile) {
+  try {
+    profile.value = JSON.parse(cachedProfile)
+    console.log('Restaurant page: Loaded profile from cache:', profile.value)
+  } catch (e) {
+    console.error('Failed to parse cached profile', e)
+  }
+}
+
+onMounted(async () => {
+  await fetchRestaurants()
+  if (user.value && !profile.value) {
+    await fetchUserProfile()
+  }
+})
+
+const fetchUserProfile = async () => {
+  try {
+    if (!user.value) return
+    
+    console.log('Restaurant page: Fetching user profile for:', user.value.uid)
+    const response = await axios.get(`http://localhost:8000/customers/${user.value.uid}`)
+    profile.value = response.data
+    
+    // Cache the profile in localStorage for quick access
+    localStorage.setItem('userProfile', JSON.stringify(profile.value))
+    console.log('Restaurant page: Profile fetched and cached:', profile.value)
+  } catch (err) {
+    console.error('Error fetching profile:', err)
+    // We don't need to set an error state for this since it's not critical
+  }
+}
 
 const fetchRestaurants = async () => {
   try {
@@ -85,6 +134,4 @@ const fetchRestaurants = async () => {
     loading.value = false
   }
 }
-
-onMounted(fetchRestaurants)
 </script>

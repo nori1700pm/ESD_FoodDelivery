@@ -1,6 +1,6 @@
 <template>
   <div v-if="loading" class="flex justify-center items-center h-64">
-    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <loading-spinner size="large" />
   </div>
 
   <div v-else-if="error && !profile" class="text-center py-10">
@@ -97,9 +97,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
-import axios from 'axios' // Import axios for API calls
+import VueFeather from 'vue-feather'
+import axios from 'axios'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)

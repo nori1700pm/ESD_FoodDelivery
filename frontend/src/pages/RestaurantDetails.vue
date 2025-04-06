@@ -20,7 +20,7 @@
     </div>
 
     <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <loading-spinner size="large" />
     </div>
 
     <div v-else-if="error || !restaurant" class="text-center py-10">
@@ -99,6 +99,8 @@ import { db } from '../config/firebase'
 import { useCartStore } from '../stores/cart'
 import { useAuthStore } from '../stores/auth'
 import { storeToRefs } from 'pinia'
+import VueFeather from 'vue-feather'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()

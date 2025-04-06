@@ -91,8 +91,9 @@
         <button
           type="submit"
           :disabled="isAdding || loading"
-          class="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-400"
+          class="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-400 flex items-center justify-center"
         >
+          <loading-spinner v-if="isAdding" type="spinner" size="small" :showText="false" class="mr-2" />
           {{ isAdding ? 'Processing...' : 'Add Money' }}
         </button>
       </form>
@@ -130,6 +131,7 @@ import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 import axios from 'axios'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const wallet = useWalletStore()
 const auth = useAuthStore()

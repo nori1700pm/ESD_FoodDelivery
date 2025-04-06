@@ -15,6 +15,7 @@ import Wallet from '../pages/Wallet.vue'
 import NotFound from '../pages/NotFound.vue'
 import ActiveOrder from '../pages/ActiveOrder.vue'
 import LandingPage from '../pages/LandingPage.vue'
+import CustomerHome from '../pages/CustomerHome.vue'
 
 const routes = [
   {
@@ -98,6 +99,12 @@ const routes = [
     name: 'DriverOrders',
     component: () => import('../pages/DriverOrders.vue'),
     meta: { requiresAuth: true, requiresDriver: true, title: 'Delivery History' }
+  },
+  {
+    path: '/home',
+    name: 'CustomerHome',
+    component: CustomerHome,
+    meta: { requiresAuth: true }
   }
 ]
 

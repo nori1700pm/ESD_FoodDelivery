@@ -2,10 +2,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from invokes import invoke_http
 import os
+import pika
 from os import environ
 import uuid
 from datetime import datetime, timezone, timedelta
 import json 
+import rabbitmq.amqp_lib as amqp_lib
+
 
 app = Flask(__name__)
 CORS(app, 
@@ -23,6 +26,40 @@ wallet_URL = environ.get('walletURL') or 'http://localhost:5002'
 error_URL = environ.get('errorURL') or 'http://localhost:5003'
 customer_URL = environ.get('customerURL') or 'http://localhost:4000'
 assign_driver_URL = environ.get('assignDriverURL') or 'http://localhost:5006'
+
+RABBITMQ_PORT = int(os.environ.get('RABBITMQ_PORT', 5672))
+RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
+PORT = int(os.environ.get('PORT', 5002)) 
+
+exchange_name = "order_topic"
+exchange_type = "topic"
+queue_name = "error_queue"  
+
+def send_error_notification(error_details):
+    try:
+        print("  Connecting to AMQP broker...")
+        connection, channel = amqp_lib.connect(
+            hostname=RABBITMQ_HOST,
+            port=RABBITMQ_PORT,
+            exchange_name='order_topic',
+            exchange_type='topic',
+        )
+
+        print("  Publishing error message to queue...")
+        channel.basic_publish(
+            exchange='order_topic',
+            routing_key='wallet.payment.error',
+            body=json.dumps(error_details),
+            properties=pika.BasicProperties(delivery_mode=2)
+        )
+
+        connection.close()
+        print("  Error message sent successfully")
+        return True
+
+    except Exception as e:
+        print(f"  ❌ Failed to send error to queue: {str(e)}")
+        return False
 
 
 @app.route("/create-order", methods=['POST', 'OPTIONS'])
@@ -151,7 +188,7 @@ def pay_delivery():
             f"{wallet_URL}/wallet/{data['custId']}/process-payment",
             method='POST',
             json={
-                "email": data["custEmail"],
+                "email": "chaizheqing2004@gmail.com", #data["custEmail"]
                 "subtotal": data['subtotal'],
                 'delivery_fee': data["deliveryFee"],
                 "amount": data['amount'],
@@ -163,6 +200,10 @@ def pay_delivery():
         if wallet_result.get('error'):
             # Payment failed - return error message
             print("Returning response:", wallet_result)
+
+            # Send insufficient balance notification
+            send_error_notification(wallet_result.get('error'))
+
             return jsonify({
                 "code": 400,
                 "message": "Insufficient balance",
@@ -198,7 +239,7 @@ def pay_delivery():
             'driverId': None,
             'driverStatus': 'PENDING',
             'paymentStatus': 'PAID',  # Set as PAID since payment successful
-            'status': 'PREPARING',  # Set as PAID since payment successful
+            'status': 'PREPARING',  
             'restaurantId': data['restaurantId'],
             'restaurantName': data['restaurantName'],
             'createdAt': timestamp,

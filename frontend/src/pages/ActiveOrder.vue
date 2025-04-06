@@ -1,7 +1,11 @@
 <template>
     <div class="max-w-4xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 flex items-center">
-            <vue-feather type="truck" size="28" class="mr-2" /> Driver Dashboard
+            <vue-feather type="truck" size="28" class="mr-2" /> Driver Dashboard <div class="flex justify-end p-4">
+                <button @click="takeBreak" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">
+                    {{ driverDetails['DriverStatus'] }}
+                </button>
+            </div>
         </h1>
         <!-- Loading state -->
         <div v-if="loading" class="flex justify-center items-center h-64">
@@ -185,14 +189,14 @@ const DRIVER_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/Driver
 const ORDER_SERVICE_URL = 'http://localhost:5001'
 const CUSTOMER_SERVICE_URL = 'http://localhost:4000'
 const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:5005'
-const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:5008'  
+const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:5008'
 
 const fetchDriverInfo = async (email) => {
     try {
         loading.value = true
         const response = await axios.get(`${DRIVER_SERVICE_URL}/drivers/${email}/`)
         const driver = response.data["Driver"]  // Get the driver object
-        
+
         driverId.value = driver.DriverId
         driverDetails.value = {
             DriverName: driver.DriverName,
@@ -201,6 +205,7 @@ const fetchDriverInfo = async (email) => {
             DriverLocation: driver.DriverLocation,
             DriverEmail: driver.DriverEmail
         }
+        console.log(driverDetails)
         await fetchAllOrders()
     } catch (error) {
         console.error('Error fetching driver data', error.message)
@@ -293,6 +298,46 @@ const fetchCustomerInfo = async (customerId) => {
     }
 }
 
+const takeBreak = async (driverId) => {
+    try {
+        if (driverDetails.value.DriverStatus == "Available") {
+            const driverResponse = await axios.put(
+                `${DRIVER_SERVICE_URL}/drivers`,
+                {
+                    "DriverId": driverId.value,
+                    "DriverStatus": "Busy",
+                    "DriverName": driverDetails.value.DriverName,
+                    "DriverNumber": driverDetails.value.DriverNumber,
+                    "DriverLocation": driverDetails.value.DriverLocation,
+                    "DriverEmail": driverDetails.value.DriverEmail
+                }
+            )
+            location.reload();
+            console.log('Driver status updated:', driverResponse.data)
+            
+        } else {
+            const driverResponse = await axios.put(
+                `${DRIVER_SERVICE_URL}/drivers`,
+                {
+                    "DriverId": driverId.value,
+                    "DriverStatus": "Available",
+                    "DriverName": driverDetails.value.DriverName,
+                    "DriverNumber": driverDetails.value.DriverNumber,
+                    "DriverLocation": driverDetails.value.DriverLocation,
+                    "DriverEmail": driverDetails.value.DriverEmail
+                }
+            )
+            location.reload();
+            console.log('Driver status updated:', driverResponse.data)
+            
+        }
+
+    } catch (driverErr) {
+        console.error('Error updating driver status:', driverErr)
+        throw new Error('Failed to make offline')
+    }
+}
+
 const updateOrderStatus = async (newStatus) => {
     if (!activeOrder.value) return
 
@@ -300,7 +345,7 @@ const updateOrderStatus = async (newStatus) => {
         loading.value = true
         error.value = null
 
-        let driverStatusUpdate = 'ASSIGNED' 
+        let driverStatusUpdate = 'ASSIGNED'
         if (newStatus === 'DELIVERED') {
             // driverStatusUpdate = 'AVAILABLE'
             try {
@@ -425,7 +470,7 @@ const rejectDelivery = async () => {
 
         if (response.data.code === 200) {
             window.alert('Delivery rejected successfully. Finding new driver.')
-            
+
             await fetchAllOrders()
         } else {
             throw new Error(response.data.message || 'Failed to reject delivery')
@@ -453,7 +498,7 @@ const cancelDelivery = async () => {
         error.value = null;
 
         console.log('Cancelling delivery for order:', activeOrder.value.orderId);
-        
+
         // Call the delivery-food composite service
         const response = await axios.post(
             `${DELIVERY_FOOD_SERVICE_URL}/deliver-food/cancel/${activeOrder.value.orderId}`

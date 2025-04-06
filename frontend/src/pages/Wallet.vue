@@ -28,7 +28,7 @@
         {{ success }}
       </div>
       
-      <form @submit.prevent="handleAddMoney" class="space-y-4">
+      <form @submit.prevent="handleTopUp" class="space-y-4">
         <div>
           <label for="amount" class="block mb-1 text-gray-700">Amount</label>
           <div class="relative mt-1">
@@ -78,12 +78,22 @@
           </button>
         </div>
         
+        <div class="border-t pt-4 mt-2">
+          <p class="mb-2 font-medium text-gray-700">Payment Method</p>
+          
+          <div class="flex items-center">
+            <img src="https://cdn.worldvectorlogo.com/logos/stripe-4.svg" 
+                 alt="Stripe" class="h-6 mr-2" />
+            <span class="text-gray-700">Credit/Debit Card (via Stripe)</span>
+          </div>
+        </div>
+        
         <button
           type="submit"
           :disabled="isAdding || loading"
           class="w-full py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:bg-gray-400"
         >
-          {{ isAdding ? 'Adding...' : 'Add Money' }}
+          {{ isAdding ? 'Processing...' : 'Add Money' }}
         </button>
       </form>
     </div>
@@ -91,7 +101,10 @@
     <div v-if="user" class="mt-4 text-sm text-gray-500">
       User ID: {{ user.uid }}
     </div>
+    
+    <!-- Debug section removed -->
   </div>
+  
   <div v-if="lastTransaction" 
        :class="[
          'mt-4 p-4 rounded-lg',
@@ -103,6 +116,7 @@
     <p>Type: {{ lastTransaction.type === 'credit' ? 'Add Money' : 'Payment' }}</p>
     <p>Amount: ${{ lastTransaction.amount.toFixed(2) }}</p>
     <p>Status: {{ lastTransaction.status }}</p>
+    <p v-if="lastTransaction.method">Method: {{ lastTransaction.method }}</p>
     <p v-if="lastTransaction.error">Error: {{ lastTransaction.error }}</p>
   </div>
 </template>
@@ -111,14 +125,18 @@
 import { ref, onMounted } from 'vue'
 import { useWalletStore } from '../stores/wallet'
 import { useAuthStore } from '../stores/auth'
+import { useRoute, useRouter } from 'vue-router'
 import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
+import axios from 'axios'
 
 const wallet = useWalletStore()
 const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 const { user } = storeToRefs(auth)
-const { balance, loading } = storeToRefs(wallet)
+const { balance, loading, lastTransaction } = storeToRefs(wallet)
 
 // Initialize balance with a default value
 balance.value = balance.value ?? 0
@@ -127,6 +145,8 @@ const amount = ref('')
 const isAdding = ref(false)
 const error = ref('')
 const success = ref('')
+const apiStatus = ref(false)
+// Removed isDev constant as it's no longer needed
 
 watch(() => user.value, (newUser) => {
   if (newUser) {
@@ -138,9 +158,29 @@ watch(() => user.value, (newUser) => {
 
 onMounted(() => {
   wallet.initWallet()
+  
+  // Check for payment canceled param
+  if (route.query.canceled) {
+    error.value = 'Payment was canceled'
+    // Remove the query parameter
+    router.replace({ path: route.path })
+  }
 })
 
-const handleAddMoney = async () => {
+const checkApiStatus = async () => {
+  try {
+    // Just check if the wallet service is up and running
+    const response = await axios.get(`${import.meta.env.VITE_WALLET_URL || 'http://localhost:5002'}/health`)
+    apiStatus.value = response.status === 200
+    console.log('API Status:', response.data)
+  } catch (err) {
+    console.error('Failed to check API status:', err)
+    apiStatus.value = false
+    error.value = 'Cannot connect to wallet service. Please ensure the service is running.'
+  }
+}
+
+const handleTopUp = async () => {
   if (!amount.value || isNaN(Number(amount.value)) || Number(amount.value) <= 0) {
     error.value = 'Please enter a valid amount'
     return
@@ -149,23 +189,35 @@ const handleAddMoney = async () => {
   try {
     isAdding.value = true
     error.value = ''
+    success.value = ''
+    
+    // Check API status before processing payment
+    await checkApiStatus()
+    if (!apiStatus.value) {
+      error.value = 'Cannot connect to payment service. Please try again later.'
+      isAdding.value = false
+      return
+    }
     
     const amountNumber = Number(amount.value)
-    console.log("Adding money:", amountNumber)
-    const result = await wallet.addMoney(amountNumber)
     
-    if (result) {
-      success.value = `Successfully added $${amountNumber.toFixed(2)} to your wallet`
-      amount.value = ''
-      await wallet.initWallet() // Refresh the balance
+    // Only use Stripe checkout now
+    console.log('Using Stripe for payment:', amountNumber)
+    const result = await wallet.createStripeCheckout(amountNumber)
+    
+    if (result.success && result.checkoutUrl) {
+      // Redirect to Stripe checkout
+      window.location.href = result.checkoutUrl
+      return
     } else {
-      error.value = 'Failed to add money to your wallet'
+      error.value = result.error || 'Failed to create payment session'
     }
   } catch (err) {
-    error.value = 'An error occurred while adding money'
+    error.value = 'An error occurred while processing your request'
     console.error(err)
   } finally {
     isAdding.value = false
+    
     // Clear success message after 5 seconds
     if (success.value) {
       setTimeout(() => {

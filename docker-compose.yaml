@@ -51,6 +51,8 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672 
       - PYTHONPATH=/app
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY} # stripe API key
+      - FRONTEND_URL=http://localhost:5173
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
       interval: 30s

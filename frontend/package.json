@@ -16,7 +16,9 @@
     "pinia": "^2.1.6",
     "vue": "^3.3.4",
     "vue-feather": "^2.0.0",
-    "vue-router": "^4.2.4"
+    "vue-router": "^4.2.4",
+    "@stripe/stripe-js": "^1.54.0",
+    "stripe": "^12.8.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",

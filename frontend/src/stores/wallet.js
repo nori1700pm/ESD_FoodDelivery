@@ -36,37 +36,9 @@ export const useWalletStore = defineStore('wallet', () => {
   }
 
   const addMoney = async (amount) => {
-    if (!auth.user) {
-      error.value = "User not authenticated"
-      return false
-    }
-
-    try {
-      error.value = null
-      const response = await axios.put(`${WALLET_URL}/wallet/${auth.user.uid}`, {
-        balance: balance.value + amount
-      })
-      
-      balance.value = response.data.balance
-      lastTransaction.value = {
-        type: 'credit',
-        amount,
-        timestamp: new Date(),
-        status: 'success'
-      }
-      return true
-    } catch (err) {
-      console.error("Error adding money:", err)
-      error.value = "Failed to add money to wallet"
-      lastTransaction.value = {
-        type: 'credit',
-        amount,
-        timestamp: new Date(),
-        status: 'failed',
-        error: err.response?.data?.error
-      }
-      return false
-    }
+    // This function is deprecated as we now only support Stripe payments
+    console.warn("Direct wallet funding is deprecated. Please use createStripeCheckout instead.");
+    return false;
   }
 
   const processPayment = async (amount, orderId) => {
@@ -105,12 +77,92 @@ export const useWalletStore = defineStore('wallet', () => {
     }
   }
 
+  // Create a Stripe checkout session for top-up
+  const createStripeCheckout = async (amount) => {
+    if (!auth.user) {
+      error.value = "User not authenticated"
+      return { success: false, error: "User not authenticated" }
+    }
+
+    try {
+      error.value = null
+      const response = await axios.post(`${WALLET_URL}/wallet/${auth.user.uid}/create-stripe-checkout`, {
+        amount: parseFloat(amount)
+      })
+      
+      return {
+        success: true,
+        checkoutUrl: response.data.url,
+        sessionId: response.data.id
+      }
+    } catch (err) {
+      console.error("Error creating Stripe checkout:", err)
+      error.value = err.response?.data?.error || "Failed to create checkout session"
+      return {
+        success: false,
+        error: error.value
+      }
+    }
+  }
+
+  // Process a successful Stripe payment after redirect
+  const processStripeSuccess = async (sessionId, customerId, amount) => {
+    if (!auth.user) {
+      error.value = "User not authenticated"
+      return { success: false, error: "User not authenticated" }
+    }
+
+    try {
+      error.value = null
+      const response = await axios.post(`${WALLET_URL}/wallet/process-stripe-success`, {
+        session_id: sessionId,
+        customer_id: customerId,
+        amount: parseFloat(amount)
+      })
+      
+      if (response.data.success) {
+        balance.value = response.data.balance
+        lastTransaction.value = {
+          type: 'credit',
+          amount: parseFloat(amount),
+          timestamp: new Date(),
+          status: 'success',
+          method: 'stripe'
+        }
+        return { 
+          success: true,
+          balance: response.data.balance
+        }
+      }
+      
+      throw new Error("Payment verification failed")
+    } catch (err) {
+      console.error("Error processing Stripe success:", err)
+      error.value = err.response?.data?.error || "Failed to verify payment"
+      lastTransaction.value = {
+        type: 'credit',
+        amount: parseFloat(amount),
+        timestamp: new Date(),
+        status: 'failed',
+        method: 'stripe',
+        error: error.value
+      }
+      return {
+        success: false,
+        error: error.value
+      }
+    }
+  }
+
   return { 
     balance, 
     loading, 
     error, 
     initWallet, 
     addMoney, 
-    processPayment 
+    processPayment,
+    createStripeCheckout,
+    processStripeSuccess,
+    lastTransaction
   }
 })

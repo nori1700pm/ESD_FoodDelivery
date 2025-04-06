@@ -188,7 +188,7 @@ def pay_delivery():
             f"{wallet_URL}/wallet/{data['custId']}/process-payment",
             method='POST',
             json={
-                "email": "chaizheqing2004@gmail.com", #data["custEmail"]
+                "email": data["custEmail"],
                 "subtotal": data['subtotal'],
                 'delivery_fee': data["deliveryFee"],
                 "amount": data['amount'],

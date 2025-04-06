@@ -74,7 +74,7 @@ def process_payment(customer_id):
             error_details = {
                 'errorId': str(uuid.uuid4()),
                 'orderId': order_id,
-                'recipient': "chaizheqing2004@gmail.com", #data.get('custEmail'),
+                'recipient': data.get('custEmail'),
                 'subject': 'Insufficient Wallet Balance',
                 'subtotal': data.get('subtotal'),
                 'payment_status': 'UNPAID',

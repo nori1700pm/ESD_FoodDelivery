@@ -2,8 +2,8 @@
   <div>
     <h1 class="text-3xl font-bold mb-6">Restaurants</h1>
 
-    <div v-if="loading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div v-if="loading" class="flex justify-center items-center py-20">
+      <loading-spinner size="large" />
     </div>
 
     <div v-else-if="error" class="text-center py-10">
@@ -56,6 +56,7 @@
 import { ref, onMounted } from 'vue'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../config/firebase'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const restaurants = ref([])
 const loading = ref(true)

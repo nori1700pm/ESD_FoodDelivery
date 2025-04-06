@@ -22,7 +22,7 @@
         <div v-if="isAvailable">
             <!-- Loading state -->
             <div v-if="loading" class="flex justify-center items-center h-64">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <loading-spinner size="large" />
             </div>
 
             <!-- Error state -->
@@ -186,6 +186,7 @@ import axios from 'axios'
 import { db } from '@/config/firebase'
 import { doc, getDoc } from "firebase/firestore"
 import VueFeather from 'vue-feather'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 
 const orders = ref([])
 const activeOrder = ref(null)

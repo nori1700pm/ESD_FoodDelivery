@@ -165,6 +165,13 @@ import VueFeather from 'vue-feather'
 const orders = ref([])
 const activeOrder = ref(null)
 const driverId = ref('')
+const driverDetails = ref({
+    DriverName: '',
+    DriverStatus: '',
+    DriverNumber: 0,
+    DriverLocation: '',
+    DriverEmail: ''
+})
 const restaurantDetails = ref(null)
 const restaurantImage = ref('')
 const customerInfo = ref(null)
@@ -174,7 +181,7 @@ const error = ref(null)
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
 
-const GETDRIVERBYEMAIL_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/drivers/'
+const DRIVER_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo'
 const ORDER_SERVICE_URL = 'http://localhost:5001'
 const CUSTOMER_SERVICE_URL = 'http://localhost:4000'
 const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:5005'
@@ -183,8 +190,17 @@ const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:5008'
 const fetchDriverInfo = async (email) => {
     try {
         loading.value = true
-        const response = await axios.get(`${GETDRIVERBYEMAIL_SERVICE_URL}${email}/`)
-        driverId.value = response.data["Driver"]["DriverId"]
+        const response = await axios.get(`${DRIVER_SERVICE_URL}/drivers/${email}/`)
+        const driver = response.data["Driver"]  // Get the driver object
+        
+        driverId.value = driver.DriverId
+        driverDetails.value = {
+            DriverName: driver.DriverName,
+            DriverStatus: driver.DriverStatus,
+            DriverNumber: driver.DriverNumber,
+            DriverLocation: driver.DriverLocation,
+            DriverEmail: driver.DriverEmail
+        }
         await fetchAllOrders()
     } catch (error) {
         console.error('Error fetching driver data', error.message)
@@ -286,7 +302,24 @@ const updateOrderStatus = async (newStatus) => {
 
         let driverStatusUpdate = 'ASSIGNED' 
         if (newStatus === 'DELIVERED') {
-            driverStatusUpdate = 'AVAILABLE'
+            // driverStatusUpdate = 'AVAILABLE'
+            try {
+                const driverResponse = await axios.put(
+                    `${DRIVER_SERVICE_URL}/drivers`,
+                    {
+                        "DriverId": driverId.value,
+                        "DriverStatus": "Available",
+                        "DriverName": driverDetails.value.DriverName,
+                        "DriverNumber": driverDetails.value.DriverNumber,
+                        "DriverLocation": driverDetails.value.DriverLocation,
+                        "DriverEmail": driverDetails.value.DriverEmail
+                    }
+                )
+                console.log('Driver status updated:', driverResponse.data)
+            } catch (driverErr) {
+                console.error('Error updating driver status:', driverErr)
+                throw new Error('Failed to update driver availability')
+            }
         }
         const response = await axios.put(
             `${ORDER_SERVICE_URL}/orders/${activeOrder.value.orderId}/status`,

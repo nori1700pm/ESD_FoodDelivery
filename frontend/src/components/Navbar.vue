@@ -3,10 +3,10 @@
     <nav class="bg-white shadow-lg">
       <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-16">
-          <router-link to="/" class="flex items-center">
+          <a href="#" @click.prevent="handleLogoClick" class="flex items-center">
             <img src="@/assets/nomnomgo-logo.jpg" alt="NomNomGo Logo" class="h-10 w-auto mr-2">
             <span class="text-2xl font-bold text-blue-600">NomNomGo</span>
-          </router-link>
+          </a>
           
           <div v-if="user" class="flex items-center space-x-4">
             <div class="md:flex md:items-center space-x-4 relative nav-links-container">
@@ -275,6 +275,20 @@ watch(
     updateBgIndicator()
   }
 )
+
+// Handle logo click based on authentication state
+const handleLogoClick = () => {
+  if (!user.value) {
+    // Not logged in, go to landing page
+    router.push('/')
+  } else if (isDriver.value) {
+    // Driver is logged in
+    router.push('/activeOrder')
+  } else {
+    // Customer is logged in
+    router.push('/home')  // Send to customer home instead of restaurants
+  }
+}
 </script>
 
 <style scoped>

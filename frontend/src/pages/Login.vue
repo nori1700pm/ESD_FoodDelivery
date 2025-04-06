@@ -185,7 +185,7 @@ const handleSubmit = async () => {
     if (email.value.endsWith('@driver.com')) {
       router.push('/activeOrder') // Redirect to active orders page for drivers
     } else {
-      router.push('/restaurants') // Redirect to restaurants list page for customers
+      router.push('/home') // Redirect to home page for customers instead of restaurants
     }
   } catch (err) {
     console.error('Login failed:', err)

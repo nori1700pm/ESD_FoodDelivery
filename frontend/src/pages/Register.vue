@@ -143,13 +143,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'
 import VueFeather from 'vue-feather'
+import { useAuthStore } from '../stores/auth'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
+const auth = useAuthStore()
+const { user } = storeToRefs(auth)
 
 const email = ref('')
 const password = ref('')
@@ -161,6 +165,18 @@ const userType = ref('customer') // Default to 'customer'
 const driverStatus = ref('Busy') // Default driver status
 const error = ref(null)
 const loading = ref(false)
+
+// Check if user is already authenticated on component mount
+onMounted(() => {
+  if (user.value) {
+    // User is already logged in, redirect to appropriate page
+    if (user.value.email && user.value.email.endsWith('@driver.com')) {
+      router.push('/activeOrder') // Redirect drivers to activeOrder page
+    } else {
+      router.push('/restaurants') // Redirect customers to restaurants page
+    }
+  }
+})
 
 const handleSubmit = async () => {
   if (!email.value || !password.value || !name.value || !phone.value || 

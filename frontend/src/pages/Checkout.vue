@@ -124,7 +124,7 @@ const total = computed(() =>
 )
 const totalWithDelivery = computed(() => total.value + deliveryFee.value)
 
-const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5004'
+const PAY_DELIVERY_SERVICE_URL = 'http://localhost:8000'
 
 const getProfileAndBalance = async () => {
   if (!user.value) {

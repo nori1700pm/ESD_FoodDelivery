@@ -132,7 +132,7 @@ const handleSubmit = async () => {
 
     if (userType.value === 'customer') {
 
-      const response = await axios.post('http://localhost:4000/customers', {
+      const response = await axios.post('http://localhost:8000/customers', {
         name: name.value,
         email: email.value,
         phone: phone.value,
@@ -147,7 +147,7 @@ const handleSubmit = async () => {
 
       try {
         // Call the OutSystems API for driver registration with correct field names
-        const response = await axios.post('https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/createDriver', {
+        const response = await axios.post('http://localhost:8000/createDriver', {
           DriverName: name.value, 
           DriverStatus: driverStatus.value, 
           DriverNumber: phone.value, 

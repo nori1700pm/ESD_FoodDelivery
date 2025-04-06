@@ -108,8 +108,8 @@ import VueFeather from 'vue-feather'
 import { storeToRefs } from 'pinia'
 import axios from 'axios'
 
-const PAY_DELIVERY_SERVICE_URL = 'http://localhost:5004'
-const ORDER_SERVICE_URL = 'http://localhost:5001'
+const PAY_DELIVERY_SERVICE_URL = 'http://localhost:8000'
+const ORDER_SERVICE_URL = 'http://localhost:8000'
 
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)

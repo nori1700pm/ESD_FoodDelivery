@@ -185,11 +185,17 @@ const error = ref(null)
 const auth = useAuthStore()
 const { user } = storeToRefs(auth)
 
-const DRIVER_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo'
-const ORDER_SERVICE_URL = 'http://localhost:5001'
-const CUSTOMER_SERVICE_URL = 'http://localhost:4000'
-const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:5005'
-const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:5008'
+// const DRIVER_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo'
+// const ORDER_SERVICE_URL = 'http://localhost:5001'
+// const CUSTOMER_SERVICE_URL = 'http://localhost:4000'
+// const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:5005'
+// const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:5008'  
+
+const DRIVER_SERVICE_URL = 'http://localhost:8000'
+const ORDER_SERVICE_URL = 'http://localhost:8000'
+const CUSTOMER_SERVICE_URL = 'http://localhost:8000'
+const DELIVERY_FOOD_SERVICE_URL = 'http://localhost:8000'
+const REJECT_DELIVERY_SERVICE_URL = 'http://localhost:8000'
 
 const fetchDriverInfo = async (email) => {
     try {

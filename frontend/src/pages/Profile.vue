@@ -122,7 +122,7 @@ const fetchUserProfile = async () => {
     error.value = null
 
     // Fetch user profile from the microservice
-    const response = await axios.get(`http://localhost:4000/customers/${user.value.uid}`)
+    const response = await axios.get(`http://localhost:8000/customers/${user.value.uid}`)
     const userData = response.data
 
     profile.value = {
@@ -147,7 +147,7 @@ const handleSubmit = async () => {
     error.value = null
     
     // Call customer microservice to update user info in the backend
-    await axios.put(`http://localhost:4000/customers/${user.value.uid}`, {
+    await axios.put(`http://localhost:8000/customers/${user.value.uid}`, {
       name: profile.value.name,
       phone: profile.value.phone,
       address: profile.value.address

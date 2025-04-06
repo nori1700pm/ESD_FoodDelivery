@@ -106,8 +106,8 @@ const completedOrders = computed(() => {
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
 })
 
-const ORDER_SERVICE_URL = 'http://localhost:5001'
-const GETDRIVERBYEMAIL_SERVICE_URL = 'https://personal-shkrtsry.outsystemscloud.com/DriverServiceModule/rest/NomNomGo/drivers/'
+const ORDER_SERVICE_URL = 'http://localhost:8000'
+const GETDRIVERBYEMAIL_SERVICE_URL = 'http://localhost:8000'
 const AUTO_REFRESH_INTERVAL = 120000 // 2 minutes - longer interval for history page
 
 onMounted(async () => {

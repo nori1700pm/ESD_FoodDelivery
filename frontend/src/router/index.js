@@ -14,24 +14,26 @@ import Profile from '../pages/Profile.vue'
 import Wallet from '../pages/Wallet.vue'
 import NotFound from '../pages/NotFound.vue'
 import ActiveOrder from '../pages/ActiveOrder.vue'
+import LandingPage from '../pages/LandingPage.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: (to) => {
-      const auth = useAuthStore()
-      return auth.user ? '/restaurants' : '/login'
-    }
+    name: 'Landing',
+    component: LandingPage,
+    meta: { allowAnonymous: true }
   },
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: Login,
+    meta: { allowAnonymous: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: Register,
+    meta: { allowAnonymous: true }
   },
   {
     path: '/restaurants',
@@ -108,6 +110,7 @@ router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresDriver = to.matched.some(record => record.meta.requiresDriver)
+  const allowAnonymous = to.matched.some(record => record.meta.allowAnonymous)
   
   // Wait for auth to initialize
   if (auth.loading) {
@@ -122,12 +125,17 @@ router.beforeEach(async (to, from, next) => {
     })
   }
   
+  // Handle redirection based on auth status
   if (requiresAuth && !auth.user) {
-    next('/login')
+    next('/')
   } else if (requiresDriver && auth.user && !auth.user.email.endsWith('@driver.com')) {
     next('/')
+  } else if (to.path === '/' && auth.user && !allowAnonymous) {
+    // If user is authenticated, redirect to restaurants page
+    next('/restaurants')
   } else {
     next()
   }
 })
+
 export default router

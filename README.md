@@ -11,30 +11,28 @@ Node.js (version 14 or later)
 # Running locally
 **Step 1: Clone the repository and run frontend**
 
-1)  ```git clone https://github.com/cloudelle/let-me-cook.git```
-2)  ```cd let-me-cook```
+1)  ```git clone https://github.com/nori1700pm/ESD_FoodDelivery.git```
+2)  ```cd ESD_FoodDelivery```
 3)  ```cd frontend```
 4) ```npm run dev```
 
 **Step 2: Run the backend**
 
-5) ```cd let-me-cook```
+5) ```cd ESD_FoodDelivery```
 6) ```docker-compose up --build```
 
 After doing these two steps the application will be running locally.
 
 # Credentials
 
-**Customer Account Credentials: (If required)**
+### Customer Test Account (If required)
+> **Note:** This is a test account for feature demonstration purposes only.  
+> To test the email functionality, please sign up using your own email address.
 
-Note: This is a test account for the features however, to test the email functionality for the customer account please sign up for a customer account using your own email.
+- **Email:** `changeadvisoryboard.esm.g10@gmail.com`  
+- **Password:** `123123`
 
-Email: changeadvisoryboard.esm.g10@gmail.com
+### Driver Test Account (If required)
 
-Password: 123123
-
-**Driver Account Credentials: (If required)**
-
-Email: jewel@driver.com
-
-Password: 123123
+- **Email:** `jewel@driver.com`  
+- **Password:** `123123`

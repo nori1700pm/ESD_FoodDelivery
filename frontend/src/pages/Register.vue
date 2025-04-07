@@ -15,7 +15,7 @@
       </div>
       
       <!-- Login type selection -->
-      <div class="flex mb-8 bg-gray-100 rounded-lg p-1">
+      <!-- <div class="flex mb-8 bg-gray-100 rounded-lg p-1">
         <button 
           @click="userType = 'customer'" 
           :class="[
@@ -38,7 +38,7 @@
         >
           Driver
         </button>
-      </div>
+      </div> -->
       
       <div v-if="error" class="bg-red-100 text-red-700 p-4 rounded-lg">
         {{ error }}
@@ -217,21 +217,21 @@ const handleSubmit = async () => {
       // Create Firebase Auth record for driver
       await createUserWithEmailAndPassword(auth, email.value, password.value)
 
-      try {
-        // Call the OutSystems API for driver registration with correct field names
-        const response = await axios.post('http://localhost:8000/createDriver', {
-          DriverName: name.value, 
-          DriverStatus: driverStatus.value, 
-          DriverNumber: phone.value, 
-          DriverLocation: driverLocation.value, 
-          DriverEmail: email.value 
-        })
-        console.log("Driver registration complete in OutSystems:", response.data)
-      } catch (outsystemsError) {
-        console.error("OutSystems API error:", outsystemsError.response?.data || outsystemsError.message)
-        error.value = "Failed to save driver in OutSystems. Please contact support."
-        return
-      }
+      // try {
+      //   // Call the OutSystems API for driver registration with correct field names
+      //   const response = await axios.post('http://localhost:8000/createDriver', {
+      //     DriverName: name.value, 
+      //     DriverStatus: driverStatus.value, 
+      //     DriverNumber: phone.value, 
+      //     DriverLocation: driverLocation.value, 
+      //     DriverEmail: email.value 
+      //   })
+      //   console.log("Driver registration complete in OutSystems:", response.data)
+      // } catch (outsystemsError) {
+      //   console.error("OutSystems API error:", outsystemsError.response?.data || outsystemsError.message)
+      //   error.value = "Failed to save driver in OutSystems. Please contact support."
+      //   return
+      // }
 
       router.push('/activeorder') // Redirect drivers to activeorder.vue
     }

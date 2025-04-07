@@ -89,9 +89,7 @@ create_queue(
     exchange_name=exchange_name,
     queue_name="notification_queue",
     binding_keys=[
-        "order.*.error",
-        "payment.*.error",
-        "wallet.*.error",
+        "wallet.payment.error",
         "order.cancel.notification",
         "driver.assigned.notification"
     ],

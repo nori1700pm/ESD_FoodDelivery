@@ -14,7 +14,8 @@ Node.js (version 14 or later)
 1)  ```git clone https://github.com/nori1700pm/ESD_FoodDelivery.git```
 2)  ```cd ESD_FoodDelivery```
 3)  ```cd frontend```
-4) ```npm run dev```
+4)  ```npm install```
+5) ```npm run dev```
 
 **Step 2: Run the backend**
 

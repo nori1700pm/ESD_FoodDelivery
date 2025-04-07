@@ -157,7 +157,6 @@ def send_notification(driver_id, order_id, customer_id):
 
         order_info = {
             "recipient": customer_result.get('email'),
-            # "recipient": "chaizheqing2004@gmail.com",  
             "order_id": order_id,
             "driver_id": driver_id,
             "subject": "Thanks for your order",

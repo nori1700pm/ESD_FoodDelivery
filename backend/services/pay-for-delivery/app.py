@@ -202,6 +202,7 @@ def pay_delivery():
             error_details = wallet_result.get('error')
             # Make sure recipient email is set
             error_details['recipient'] = data.get('custEmail')
+            
             # Publishes error to queue, message consumed by error and notification
             send_error_notification(error_details)
 

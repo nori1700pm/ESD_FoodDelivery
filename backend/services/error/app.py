@@ -21,7 +21,7 @@ rabbit_host = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
 rabbit_port = int(os.environ.get('RABBITMQ_PORT', 5672))
 exchange_name = "order_topic"
 exchange_type = "topic"
-queue_name = "error_queue"  # Changed from "Error" to be consistent
+queue_name = "error_queue"  
 
 def callback(channel, method, properties, body):
     try:

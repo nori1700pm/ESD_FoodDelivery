@@ -17,6 +17,7 @@ def callback(channel, method, properties, body):
         print(f"JSON: {message_data}")
 
         recipient_email = message_data.get('recipient')
+        
         # Initialize Mail correctly with personalization
         message = Mail(from_email=Email('nomnomgodelivery@gmail.com'))
         personalization = Personalization()

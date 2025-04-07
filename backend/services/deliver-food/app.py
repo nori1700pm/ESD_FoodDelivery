@@ -162,7 +162,6 @@ def cancel_order(order_id):
                 # Prepare notification data
                 notification_data = {
                     "recipient": customer_result.get('email'),
-                    # "recipient": "chaizheqing2004@gmail.com",  
                     "subject": "Order Cancelled and Refund Processed",
                     "subtotal": f"{subtotal:.2f}",  
                     "payment_status": payment_status,

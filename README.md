@@ -34,10 +34,12 @@ After doing these two steps the application will be running on http://localhost:
 - **Email:** `changeadvisoryboard.esm.g10@gmail.com`  
 - **Password:** `123123`
 
-### Driver Test Account (If required)
+### Driver Test Account (Required)
 
 - **Email:** `jewel@driver.com`  
 - **Password:** `123123`
+
+**NOTE:** The driver test account is needed to test driver functionalities such as rejecting assigned orders. 
 
 # Swagger Documentation
 

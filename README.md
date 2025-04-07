@@ -25,12 +25,16 @@ After doing these two steps the application will be running locally.
 
 # Credentials
 
-**Customer Account Credentials:(If required)**
-Note: This is a test account for the features however, to test the email functionality for the customer account do sign up for a customer account using your own email.
+**Customer Account Credentials: (If required)**
+
+Note: This is a test account for the features however, to test the email functionality for the customer account please sign up for a customer account using your own email.
 
 Email: changeadvisoryboard.esm.g10@gmail.com
+
 Password: 123123
 
-**Driver Account Credentials:(If required)**
+**Driver Account Credentials: (If required)**
+
 Email: jewel@driver.com
+
 Password: 123123

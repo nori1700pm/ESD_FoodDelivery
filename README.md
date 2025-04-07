@@ -35,11 +35,10 @@ After doing these two steps the application will be running on http://localhost:
 - **Password:** `123123`
 
 ### Driver Test Account (Required)
+> **Note:** The driver test account is needed to test driver functionalities such as rejecting assigned orders. Due to low hiring period, applications for new driver accounts are not accepted.
 
 - **Email:** `jewel@driver.com`  
 - **Password:** `123123`
-
-**NOTE:** The driver test account is needed to test driver functionalities such as rejecting assigned orders. 
 
 # Swagger Documentation
 

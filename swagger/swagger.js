@@ -5,6 +5,8 @@ const path = require('path');
 
 const app = express();
 
+const paths = [];
+
 // Serve Swagger documentation for all services
 const swaggerDocsPath = path.join(__dirname, 'swaggerDocs');
 const swaggerFiles = fs.readdirSync(swaggerDocsPath);
@@ -20,9 +22,21 @@ swaggerFiles.forEach((file) => {
     };
 
     // Create a route for each service's Swagger documentation
-    app.use(`/api-docs/${serviceName}`, swaggerUi.serve, serveSwagger);
-    console.log(`Swagger docs for ${serviceName} are available at /api-docs/${serviceName}`);
+    const routePath = `/api-docs/${serviceName}`;
+    app.use(routePath, swaggerUi.serve, serveSwagger);
+    paths.push(routePath);
+    console.log(`Swagger docs for ${serviceName} are available at ${routePath}`);
   }
+});
+
+// Add a home page route to list all paths
+app.get('/api-docs/', (req, res) => {
+  res.send(`
+    <h1>Available Swagger Documentation</h1>
+    <ul>
+      ${paths.map((path) => `<li><a href="${path}">${path}</a></li>`).join('')}
+    </ul>
+  `);
 });
 
 // Example of health check route

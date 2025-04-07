@@ -1,6 +1,5 @@
-# NomNomGO!
+# NomNomGo!
 GitHub Repository: 
-
 https://github.com/nori1700pm/ESD_FoodDelivery.git
 
 # Description
@@ -24,18 +23,14 @@ Node.js (version 14 or later)
 
 After doing these two steps the application will be running locally.
 
-# Credentials (If Required)
+# Credentials
 
-**Customer Account Credentials:**
-
+**Customer Account Credentials:(If required)**
 Note: This is a test account for the features however, to test the email functionality for the customer account do sign up for a customer account using your own email.
 
 Email: changeadvisoryboard.esm.g10@gmail.com
-
 Password: 123123
 
-**Driver Account Credentials:**
-
+**Driver Account Credentials:(If required)**
 Email: jewel@driver.com
-
 Password: 123123

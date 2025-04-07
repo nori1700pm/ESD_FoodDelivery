@@ -159,11 +159,11 @@ const fetchDriverOrders = async () => {
     console.log('Raw orders response:', response.data)
 
     if (response.data && Array.isArray(response.data)) {
-      // Process orders
+      // Filter orders for the current driver before mapping
       orders.value = response.data
+        .filter(order => order.driverId === driverId.value)
         .map(order => {
           const orderId = order.orderId || order.id
-          console.log('Processing order:', { orderId, order })
 
           const parseSGDate = (dateStr) => {
             if (!dateStr) return new Date()

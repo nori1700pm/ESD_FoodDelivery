@@ -273,7 +273,7 @@ routes:
   hosts: ~
   name: drivers
   paths:
-  - /drivers/ #changed
+  - /drivers
   service: bd5ea365-6e5d-4331-9b40-01cf58a00a0f
   path_handling: v0
   preserve_host: false
@@ -286,7 +286,7 @@ routes:
   id: 19904fcf-cf0a-4a8e-8676-03061d247330
   tags: []
   https_redirect_status_code: 426
-- strip_path: false #changed 
+- strip_path: true
   created_at: 1743934486
   updated_at: 1743934486
   response_buffering: true

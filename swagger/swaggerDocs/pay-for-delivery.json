@@ -1,0 +1,214 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Payment Service API",
+    "description": "API documentation for the Payment microservice"
+  },
+  "host": "localhost:5004",
+  "basePath": "/",
+  "schemes": ["http"],
+  "paths": {
+    "/create-order": {
+      "post": {
+        "summary": "Create a new order",
+        "description": "Creates a new order with the provided details",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "custId": { "type": "string", "description": "Customer ID" },
+                "orderId": { "type": "string", "description": "Order ID" },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string", "description": "Item ID" },
+                      "name": { "type": "string", "description": "Item name" },
+                      "price": { "type": "number", "description": "Item price" },
+                      "quantity": { "type": "integer", "description": "Item quantity" },
+                      "image": { "type": "string", "description": "Item image URL" }
+                    }
+                  }
+                },
+                "address": { "type": "string", "description": "Delivery address" },
+                "amount": { "type": "number", "description": "Total order amount" },
+                "deliveryFee": { "type": "number", "description": "Delivery fee" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order created successfully"
+          },
+          "400": {
+            "description": "Invalid input or missing fields"
+          },
+          "500": {
+            "description": "Failed to create order"
+          }
+        }
+      }
+    },
+    "/pay-delivery": {
+      "post": {
+        "summary": "Process payment for delivery",
+        "description": "Processes payment for a delivery order and assigns a driver",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "custId": { "type": "string", "description": "Customer ID" },
+                "orderId": { "type": "string", "description": "Order ID" },
+                "amount": { "type": "number", "description": "Total payment amount" },
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string", "description": "Item ID" },
+                      "name": { "type": "string", "description": "Item name" },
+                      "price": { "type": "number", "description": "Item price" },
+                      "quantity": { "type": "integer", "description": "Item quantity" },
+                      "image": { "type": "string", "description": "Item image URL" }
+                    }
+                  }
+                },
+                "address": { "type": "string", "description": "Delivery address" },
+                "restaurantId": { "type": "string", "description": "Restaurant ID" },
+                "restaurantName": { "type": "string", "description": "Restaurant name" },
+                "deliveryFee": { "type": "number", "description": "Delivery fee" },
+                "custEmail": { "type": "string", "description": "Customer email" },
+                "subtotal": { "type": "number", "description": "Order subtotal" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment processed, order created, and driver assigned successfully"
+          },
+          "207": {
+            "description": "Partial success: Payment and order successful, but driver assignment failed"
+          },
+          "400": {
+            "description": "Insufficient balance or invalid input"
+          },
+          "500": {
+            "description": "Failed to process payment or create order"
+          }
+        }
+      }
+    },
+    "/user-profile/{user_id}": {
+      "get": {
+        "summary": "Get user profile",
+        "description": "Fetches the profile and wallet balance of a user",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "uid": { "type": "string", "description": "User ID" },
+                "address": { "type": "string", "description": "User address" },
+                "name": { "type": "string", "description": "User name" },
+                "email": { "type": "string", "description": "User email" },
+                "phone": { "type": "string", "description": "User phone number" },
+                "balance": { "type": "number", "description": "Wallet balance" }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Failed to fetch user profile"
+          }
+        }
+      }
+    },
+    "/wallet/topup": {
+      "post": {
+        "summary": "Top up wallet",
+        "description": "Creates a Stripe checkout session for wallet top-up",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "customerId": { "type": "string", "description": "Customer ID" },
+                "amount": { "type": "number", "description": "Top-up amount" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout session created successfully"
+          },
+          "400": {
+            "description": "Invalid input or missing fields"
+          },
+          "500": {
+            "description": "Failed to create checkout session"
+          }
+        }
+      }
+    },
+    "/wallet/process-topup": {
+      "post": {
+        "summary": "Process wallet top-up",
+        "description": "Processes a successful Stripe payment and updates the wallet balance",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "session_id": { "type": "string", "description": "Stripe session ID" },
+                "customer_id": { "type": "string", "description": "Customer ID" },
+                "amount": { "type": "number", "description": "Payment amount" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment processed successfully"
+          },
+          "400": {
+            "description": "Invalid session or payment not completed"
+          },
+          "500": {
+            "description": "Failed to process payment"
+          }
+        }
+      }
+    }
+  }
+}

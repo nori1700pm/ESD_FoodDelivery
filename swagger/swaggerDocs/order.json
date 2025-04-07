@@ -1,0 +1,204 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Order Service API",
+    "description": "API documentation for the Order microservice"
+  },
+  "host": "localhost:5001",
+  "basePath": "/",
+  "schemes": ["http"],
+  "paths": {
+    "/orders": {
+      "get": {
+        "summary": "Get all orders",
+        "description": "Retrieve all orders or filter by customerId",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "Filter orders by customer ID",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string" },
+                  "customerId": { "type": "string" },
+                  "items": { "type": "array", "items": { "type": "object" } },
+                  "price": { "type": "number" },
+                  "status": { "type": "string" },
+                  "deliveryAddress": { "type": "string" },
+                  "deliveryFee": { "type": "number" },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "updatedAt": { "type": "string", "format": "date-time" }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new order",
+        "description": "Create a new order with the provided details",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Order object that needs to be added",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "customerId": { "type": "string" },
+                "items": { "type": "array", "items": { "type": "object" } },
+                "price": { "type": "number" },
+                "status": { "type": "string" },
+                "deliveryAddress": { "type": "string" },
+                "deliveryFee": { "type": "number" },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              },
+              "required": ["customerId", "items", "price", "status", "deliveryAddress", "deliveryFee"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Order created successfully",
+            "schema": { "$ref": "#/definitions/Order" }
+          },
+          "400": { "description": "Invalid input" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/orders/{order_id}": {
+      "get": {
+        "summary": "Get a specific order",
+        "description": "Retrieve a specific order by its ID",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "description": "ID of the order to retrieve",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/Order" }
+          },
+          "404": { "description": "Order not found" },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "put": {
+        "summary": "Update an existing order",
+        "description": "Update the details of an existing order",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "description": "ID of the order to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Updated order object",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "customerId": { "type": "string" },
+                "items": { "type": "array", "items": { "type": "object" } },
+                "price": { "type": "number" },
+                "status": { "type": "string" },
+                "deliveryAddress": { "type": "string" },
+                "deliveryFee": { "type": "number" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order updated successfully",
+            "schema": { "$ref": "#/definitions/Order" }
+          },
+          "404": { "description": "Order not found" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/orders/{order_id}/status": {
+      "put": {
+        "summary": "Update order status",
+        "description": "Update the status fields of an order",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "description": "ID of the order to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Status fields to update",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string" },
+                "driverStatus": { "type": "string" },
+                "paymentStatus": { "type": "string" },
+                "driverId": { "type": "string" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order status updated successfully",
+            "schema": { "$ref": "#/definitions/Order" }
+          },
+          "404": { "description": "Order not found" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Order": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "price": { "type": "number" },
+        "status": { "type": "string" },
+        "deliveryAddress": { "type": "string" },
+        "deliveryFee": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

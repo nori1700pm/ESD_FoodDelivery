@@ -1,0 +1,208 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Wallet Service API",
+    "description": "API documentation for the Wallet microservice"
+  },
+  "host": "localhost:5002",
+  "basePath": "/",
+  "schemes": ["http"],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Checks the health of the wallet service",
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          },
+          "500": {
+            "description": "Health check failed"
+          }
+        }
+      }
+    },
+    "/wallet/{customer_id}": {
+      "get": {
+        "summary": "Get wallet balance",
+        "description": "Retrieves the wallet balance for a specific customer",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the customer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet balance retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "balance": { "type": "number", "description": "Wallet balance" }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to retrieve wallet balance"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update wallet balance",
+        "description": "Updates the wallet balance for a specific customer",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the customer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "balance": { "type": "number", "description": "New wallet balance" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wallet balance updated successfully"
+          },
+          "400": {
+            "description": "Invalid balance"
+          },
+          "500": {
+            "description": "Failed to update wallet balance"
+          }
+        }
+      }
+    },
+    "/wallet/{customer_id}/process-payment": {
+      "post": {
+        "summary": "Process wallet payment",
+        "description": "Processes a payment from the customer's wallet",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the customer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "amount": { "type": "number", "description": "Payment amount" },
+                "orderId": { "type": "string", "description": "Order ID" },
+                "custEmail": { "type": "string", "description": "Customer email" },
+                "subtotal": { "type": "number", "description": "Order subtotal" },
+                "delivery_fee": { "type": "number", "description": "Delivery fee" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment processed successfully"
+          },
+          "400": {
+            "description": "Insufficient balance or invalid request"
+          },
+          "500": {
+            "description": "Failed to process payment"
+          }
+        }
+      }
+    },
+    "/wallet/{customer_id}/create-stripe-checkout": {
+      "post": {
+        "summary": "Create Stripe checkout session",
+        "description": "Creates a Stripe checkout session for wallet top-up",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the customer"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "amount": { "type": "number", "description": "Top-up amount" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stripe checkout session created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "description": "Session ID" },
+                "url": { "type": "string", "description": "Checkout URL" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid amount"
+          },
+          "500": {
+            "description": "Failed to create Stripe checkout session"
+          }
+        }
+      }
+    },
+    "/wallet/process-stripe-success": {
+      "post": {
+        "summary": "Process Stripe payment success",
+        "description": "Processes a successful Stripe payment and updates the wallet balance",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "session_id": { "type": "string", "description": "Stripe session ID" },
+                "customer_id": { "type": "string", "description": "Customer ID" },
+                "amount": { "type": "number", "description": "Payment amount" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stripe payment processed successfully"
+          },
+          "400": {
+            "description": "Invalid session or payment not completed"
+          },
+          "500": {
+            "description": "Failed to process Stripe payment"
+          }
+        }
+      }
+    }
+  }
+}

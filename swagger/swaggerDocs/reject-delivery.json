@@ -1,0 +1,68 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Delivery Rejection Service API",
+    "description": "API documentation for the Delivery Rejection microservice"
+  },
+  "host": "localhost:5008",
+  "basePath": "/",
+  "schemes": ["http"],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Checks the health of the delivery rejection service",
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          },
+          "500": {
+            "description": "Health check failed"
+          }
+        }
+      }
+    },
+    "/reject-delivery/{order_id}/{driver_id}": {
+      "post": {
+        "summary": "Reject a delivery",
+        "description": "Rejects a delivery and reassigns a new driver",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the order to be rejected"
+          },
+          {
+            "name": "driver_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "The ID of the driver rejecting the delivery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery rejected successfully and new driver reassignment triggered",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "order_status": { "type": "object", "description": "Updated order status" },
+                "driver_status": { "type": "object", "description": "Updated driver status" },
+                "assign_result": { "type": "object", "description": "Result of driver reassignment" }
+              }
+            }
+          },
+          "404": {
+            "description": "Order or driver not found"
+          },
+          "500": {
+            "description": "Failed to reject delivery or reassign driver"
+          }
+        }
+      }
+    }
+  }
+}

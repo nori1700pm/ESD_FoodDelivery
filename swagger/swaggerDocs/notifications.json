@@ -1,0 +1,69 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Notification Service API",
+    "description": "API documentation for the Notification microservice"
+  },
+  "host": "localhost:5000",
+  "basePath": "/",
+  "schemes": ["http"],
+  "paths": {
+    "/notifications/send": {
+      "post": {
+        "summary": "Send a notification",
+        "description": "Sends a notification to a recipient",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "recipient": { "type": "string", "description": "Recipient email address" },
+                "subject": { "type": "string", "description": "Subject of the notification" },
+                "subtotal": { "type": "number", "description": "Subtotal amount" },
+                "delivery_fee": { "type": "number", "description": "Delivery fee" },
+                "total": { "type": "number", "description": "Total amount" },
+                "payment_status": { "type": "string", "description": "Payment status" },
+                "message": { "type": "string", "description": "Additional message" },
+                "items": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "List of items in the order"
+                },
+                "order_id": { "type": "string", "description": "Order ID" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification sent successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Failed to send notification"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Checks the health of the notification service",
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          },
+          "500": {
+            "description": "Health check failed"
+          }
+        }
+      }
+    }
+  }
+}

@@ -147,7 +147,6 @@ const amount = ref('')
 const isAdding = ref(false)
 const error = ref('')
 const success = ref('')
-const apiStatus = ref(false)
 // Removed isDev constant as it's no longer needed
 
 watch(() => user.value, (newUser) => {
@@ -168,19 +167,6 @@ onMounted(() => {
     router.replace({ path: route.path })
   }
 })
-
-const checkApiStatus = async () => {
-  try {
-    // Just check if the wallet service is up and running
-    const response = await axios.get(`${import.meta.env.VITE_WALLET_URL || 'http://localhost:5002'}/health`)
-    apiStatus.value = response.status === 200
-    console.log('API Status:', response.data)
-  } catch (err) {
-    console.error('Failed to check API status:', err)
-    apiStatus.value = false
-    error.value = 'Cannot connect to wallet service. Please ensure the service is running.'
-  }
-}
 
 const handleTopUp = async () => {
   if (!amount.value || isNaN(Number(amount.value)) || Number(amount.value) <= 0) {

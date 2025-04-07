@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useAuthStore } from './auth'
 import axios from 'axios'
 
-const WALLET_URL = 'http://localhost:5002'
-const PAY_DELIVERY_URL = 'http://localhost:5004'
+const KONG_URL = 'http://localhost:8000'
+
 
 
 export const useWalletStore = defineStore('wallet', () => {
@@ -23,9 +23,14 @@ export const useWalletStore = defineStore('wallet', () => {
 
     try {
       loading.value = true
-      const response = await axios.get(`${WALLET_URL}/wallet/${auth.user.uid}`)
-      balance.value = response.data.balance
-      error.value = null
+      // Use get_user_profile from pay-for-delivery through Kong
+      const response = await axios.get(`${KONG_URL}/user-profile/${auth.user.uid}`)
+      if (response.data.code === 200) {
+        balance.value = response.data.data.balance
+        error.value = null
+      } else {
+        throw new Error(response.data.message)
+      }
     } catch (err) {
       console.error("Error initializing wallet:", err)
       error.value = "Failed to initialize wallet"
@@ -50,7 +55,7 @@ export const useWalletStore = defineStore('wallet', () => {
     try {
       error.value = null
       // Call pay-for-delivery service instead of wallet directly
-      const response = await axios.post(`${PAY_DELIVERY_URL}/pay-delivery`, {
+      const response = await axios.post(`${KONG_URL}/pay-delivery`, {
         custId: auth.user.uid,
         orderId: orderId,
         amount: amount
@@ -86,7 +91,8 @@ export const useWalletStore = defineStore('wallet', () => {
 
     try {
       error.value = null
-      const response = await axios.post(`${WALLET_URL}/wallet/${auth.user.uid}/create-stripe-checkout`, {
+      const response = await axios.post(`${KONG_URL}/wallet/topup`, {
+        customerId: auth.user.uid,
         amount: parseFloat(amount)
       })
       
@@ -114,14 +120,15 @@ export const useWalletStore = defineStore('wallet', () => {
 
     try {
       error.value = null
-      const response = await axios.post(`${WALLET_URL}/wallet/process-stripe-success`, {
+      const response = await axios.post(`${KONG_URL}/wallet/process-topup`, {
         session_id: sessionId,
         customer_id: customerId,
         amount: parseFloat(amount)
       })
       
-      if (response.data.success) {
-        balance.value = response.data.balance
+      // Changed this condition to check for code instead of success
+      if (response.data.code === 200) {
+        balance.value = response.data.data.balance
         lastTransaction.value = {
           type: 'credit',
           amount: parseFloat(amount),
@@ -131,14 +138,14 @@ export const useWalletStore = defineStore('wallet', () => {
         }
         return { 
           success: true,
-          balance: response.data.balance
+          balance: response.data.data.balance
         }
       }
       
-      throw new Error("Payment verification failed")
+      throw new Error(response.data.message || "Payment verification failed")
     } catch (err) {
       console.error("Error processing Stripe success:", err)
-      error.value = err.response?.data?.error || "Failed to verify payment"
+      error.value = err.response?.data?.message || "Failed to verify payment"
       lastTransaction.value = {
         type: 'credit',
         amount: parseFloat(amount),

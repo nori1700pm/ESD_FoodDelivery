@@ -125,7 +125,7 @@ onUnmounted(() => {
 const fetchDriverId = async (email) => {
   try {
     loading.value = true
-    const response = await axios.get(`${GETDRIVERBYEMAIL_SERVICE_URL}${email}/`)
+    const response = await axios.get(`${GETDRIVERBYEMAIL_SERVICE_URL}/drivers/${email}/`)
     driverId.value = response.data["Driver"]["DriverId"]
     await fetchDriverOrders()
   } catch (error) {

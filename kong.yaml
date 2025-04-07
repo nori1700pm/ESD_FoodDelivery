@@ -273,7 +273,7 @@ routes:
   hosts: ~
   name: drivers
   paths:
-  - /drivers
+  - /drivers/ #changed
   service: bd5ea365-6e5d-4331-9b40-01cf58a00a0f
   path_handling: v0
   preserve_host: false
@@ -286,7 +286,7 @@ routes:
   id: 19904fcf-cf0a-4a8e-8676-03061d247330
   tags: []
   https_redirect_status_code: 426
-- strip_path: true
+- strip_path: false #changed 
   created_at: 1743934486
   updated_at: 1743934486
   response_buffering: true
@@ -296,6 +296,7 @@ routes:
   snis: ~
   methods:
   - POST
+  - OPTIONS #changed
   hosts: ~
   name: create-driver
   paths:
@@ -467,6 +468,21 @@ routes:
   tags: []
   https_redirect_status_code: 426
 plugins:
+- name: cors #changed 
+  enabled: true
+  route: 2aa5de6c-acc1-4bc2-bb68-bf36f78ddc83  # ID of the create-driver route
+  config:
+    origins:
+    - http://localhost:5173
+    methods:
+    - GET
+    - POST
+    - OPTIONS
+    headers:
+    - Accept
+    - Authorization
+    - Content-Type
+    credentials: true
 - name: cors
   enabled: true
   ordering: ~

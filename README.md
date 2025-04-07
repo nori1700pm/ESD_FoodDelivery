@@ -27,7 +27,8 @@ After doing these two steps the application will be running locally.
 
 ### Customer Test Account (If required)
 > **Note:** This is a test account for feature demonstration purposes only.  
-> To test the email functionality, please sign up using your own email address.
+> To test the email functionality for customer account, 
+> please sign up using your own email address.
 
 - **Email:** `changeadvisoryboard.esm.g10@gmail.com`  
 - **Password:** `123123`

@@ -24,8 +24,7 @@ Node.js (version 14 or later)
 
 After doing these two steps the application will be running locally.
 
-# Credentials
-**If required:**
+# Credentials (If Required)
 
 **Customer Account Credentials:**
 

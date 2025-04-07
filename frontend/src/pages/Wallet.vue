@@ -193,39 +193,61 @@ const handleTopUp = async () => {
     error.value = ''
     success.value = ''
     
-    // Check API status before processing payment
-    await checkApiStatus()
-    if (!apiStatus.value) {
-      error.value = 'Cannot connect to payment service. Please try again later.'
-      isAdding.value = false
-      return
-    }
-    
     const amountNumber = Number(amount.value)
     
-    // Only use Stripe checkout now
-    console.log('Using Stripe for payment:', amountNumber)
-    const result = await wallet.createStripeCheckout(amountNumber)
+    // Create checkout session through pay-for-delivery service
+    console.log('Creating checkout session:', amountNumber)
+    const response = await axios.post('http://localhost:8000/wallet/topup', {
+      customerId: user.value.uid,
+      amount: amountNumber
+    })
     
-    if (result.success && result.checkoutUrl) {
+    if (response.data.code === 200 && response.data.data.url) {
       // Redirect to Stripe checkout
-      window.location.href = result.checkoutUrl
-      return
+      window.location.href = response.data.data.url
     } else {
-      error.value = result.error || 'Failed to create payment session'
+      error.value = response.data.message || 'Failed to create payment session'
     }
   } catch (err) {
     error.value = 'An error occurred while processing your request'
     console.error(err)
   } finally {
     isAdding.value = false
-    
-    // Clear success message after 5 seconds
-    if (success.value) {
-      setTimeout(() => {
-        success.value = ''
-      }, 5000)
-    }
   }
 }
+const handleSuccessfulPayment = async (sessionId) => {
+  try {
+    const response = await axios.post('http://localhost:8000/wallet/process-topup', {
+      session_id: sessionId,
+      customer_id: user.value.uid,
+      amount: amount.value
+    })
+
+    if (response.data.code === 200) {
+      success.value = 'Payment processed successfully!'
+      // Refresh wallet balance
+      wallet.initWallet()
+    } else {
+      error.value = response.data.message || 'Failed to process payment'
+    }
+  } catch (err) {
+    error.value = 'An error occurred while processing the payment'
+    console.error(err)
+  }
+}
+onMounted(() => {
+  wallet.initWallet()
+  
+  // Check for payment success
+  if (route.query.session_id) {
+    handleSuccessfulPayment(route.query.session_id)
+    // Remove query parameters
+    router.replace({ path: route.path })
+  }
+  // Check for payment canceled
+  else if (route.query.canceled) {
+    error.value = 'Payment was canceled'
+    router.replace({ path: route.path })
+  }
+})
 </script>

@@ -151,6 +151,60 @@ services:
   tags: ~
   updated_at: 1743762801
 routes:
+- strip_path: false
+  created_at: 1743868383  # Current timestamp in Unix format
+  updated_at: 1743868383  # Same as created_at for new routes
+  response_buffering: true
+  headers: ~
+  destinations: ~
+  ws_id: 09e22340-5775-4879-910f-6cf9ed5b662b
+  snis: ~
+  methods:
+  - POST
+  - OPTIONS
+  hosts: ~
+  name: wallet-topup
+  paths:
+  - /wallet/topup
+  service: d74ce32b-f05d-47d9-91a8-c072f20ed732  # This is the pay-delivery-service ID
+  path_handling: v0
+  preserve_host: false
+  regex_priority: 0
+  sources: ~
+  request_buffering: true
+  protocols:
+  - http
+  - https
+  id: 1437c411-a2f4-4bbf-b689-5a7046b7183d  # Generate a new unique ID
+  tags: []
+  https_redirect_status_code: 426
+- strip_path: false
+  created_at: 1743868383  # Current timestamp in Unix format
+  updated_at: 1743868383  # Same as created_at for new routes
+  response_buffering: true
+  headers: ~
+  destinations: ~
+  ws_id: 09e22340-5775-4879-910f-6cf9ed5b662b
+  snis: ~
+  methods:
+  - POST
+  - OPTIONS
+  hosts: ~
+  name: wallet-process-topup
+  paths:
+  - /wallet/process-topup
+  service: d74ce32b-f05d-47d9-91a8-c072f20ed732  # This is the pay-delivery-service ID
+  path_handling: v0
+  preserve_host: false
+  regex_priority: 0
+  sources: ~
+  request_buffering: true
+  protocols:
+  - http
+  - https
+  id: 1437c411-a2f4-4bbf-b689-5a7046b7184d  # Generate a new unique ID
+  tags: []
+  https_redirect_status_code: 426
 - strip_path: true
   created_at: 1743868383
   updated_at: 1743868519

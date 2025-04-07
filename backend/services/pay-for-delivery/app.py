@@ -8,8 +8,9 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import json 
 import rabbitmq.amqp_lib as amqp_lib
+import stripe
 
-
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 app = Flask(__name__)
 CORS(app, 
      resources={r"/*": {
@@ -383,6 +384,82 @@ def get_user_profile(user_id):
         return jsonify({
             "code": 500,
             "message": f"Service error: {str(e)}"
+        }), 500
+
+# User -> Click Add Money -> Create Stripe Session -> Redirect to Stripe Payment Page
+@app.route("/wallet/topup", methods=['POST'])
+def topup_wallet():
+    if not request.is_json:
+        return jsonify({
+            "code": 400,
+            "message": "Invalid JSON input: " + str(request.get_data())
+        }), 400
+
+    try:
+        data = request.get_json()
+        customer_id = data.get('customerId')
+        amount = data.get('amount')
+
+        if not customer_id or not amount:
+            return jsonify({
+                "code": 400,
+                "message": "Missing required fields: customerId and amount"
+            }), 400
+
+        # Create Stripe checkout session through wallet service
+        print('\n-----Creating Stripe checkout session-----')
+        stripe_result = invoke_http(
+            f"{wallet_URL}/wallet/{customer_id}/create-stripe-checkout",
+            method='POST',
+            json={"amount": amount}
+        )
+        print('stripe_result:', stripe_result)
+
+        return jsonify({
+            "code": 200,
+            "data": stripe_result,
+            "message": "Checkout session created successfully"
+        }), 200
+
+    except Exception as e:
+        print(f"Error creating checkout session: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
+        }), 500
+
+# Stripe Payment Success -> Process Payment -> Update Wallet Balance
+@app.route("/wallet/process-topup", methods=['POST'])
+def process_topup():
+    if not request.is_json:
+        return jsonify({
+            "code": 400,
+            "message": "Invalid JSON input: " + str(request.get_data())
+        }), 400
+
+    try:
+        data = request.get_json()
+        
+        # Process the successful payment through wallet service
+        print('\n-----Processing successful payment-----')
+        result = invoke_http(
+            f"{wallet_URL}/wallet/process-stripe-success",
+            method='POST',
+            json=data
+        )
+        print('process_result:', result)
+
+        return jsonify({
+            "code": 200,
+            "data": result,
+            "message": "Payment processed successfully"
+        }), 200
+
+    except Exception as e:
+        print(f"Error processing payment: {str(e)}")
+        return jsonify({
+            "code": 500,
+            "message": f"An error occurred: {str(e)}"
         }), 500
     
 if __name__ == "__main__":

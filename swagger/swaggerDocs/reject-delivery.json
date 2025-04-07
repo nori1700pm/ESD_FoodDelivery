@@ -9,20 +9,6 @@
   "basePath": "/",
   "schemes": ["http"],
   "paths": {
-    "/health": {
-      "get": {
-        "summary": "Health check",
-        "description": "Checks the health of the delivery rejection service",
-        "responses": {
-          "200": {
-            "description": "Service is healthy"
-          },
-          "500": {
-            "description": "Health check failed"
-          }
-        }
-      }
-    },
     "/reject-delivery/{order_id}/{driver_id}": {
       "post": {
         "summary": "Reject a delivery",

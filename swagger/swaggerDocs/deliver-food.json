@@ -9,20 +9,6 @@
   "basePath": "/",
   "schemes": ["http"],
   "paths": {
-    "/health": {
-      "get": {
-        "summary": "Health check",
-        "description": "Checks the health of the food delivery service",
-        "responses": {
-          "200": {
-            "description": "Service is healthy"
-          },
-          "500": {
-            "description": "Health check failed"
-          }
-        }
-      }
-    },
     "/deliver-food/cancel/{order_id}": {
       "post": {
         "summary": "Cancel an order",

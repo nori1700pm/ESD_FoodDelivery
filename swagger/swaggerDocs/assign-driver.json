@@ -64,8 +64,8 @@
     },
     "/cancel/{order_id}": {
       "post": {
-        "summary": "Cancel an order",
-        "description": "Cancels an order and processes a refund to the customer's wallet",
+        "summary": "Cancel an order after 15 minutes when no drivers have been assigned/started a delivery",
+        "description": "Cancels an order and processes a refund to the customer's wallet after 15 minutes when no drivers have been assigned/started a delivery",
         "parameters": [
           {
             "name": "order_id",

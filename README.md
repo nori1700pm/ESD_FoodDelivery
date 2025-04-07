@@ -1,5 +1,7 @@
 # NomNomGO!
-GitHub Repository: https://github.com/nori1700pm/ESD_FoodDelivery.git
+GitHub Repository: 
+
+https://github.com/nori1700pm/ESD_FoodDelivery.git
 
 # Description
 NomNomGo! is a food delivery microservice application developed using Vue 3 and Vite framework, Docker, Python Flask, Firebase and Outsystems. This application consists of both a customer interface and a driver interface to handle scenarios from both perspectives.
@@ -30,9 +32,11 @@ After doing these two steps the application will be running locally.
 Note: This is a test account for the features however, to test the email functionality for the customer account do sign up for a customer account using your own email.
 
 Email: changeadvisoryboard.esm.g10@gmail.com
+
 Password: 123123
 
 **Driver Account Credentials:**
 
 Email: jewel@driver.com
+
 Password: 123123

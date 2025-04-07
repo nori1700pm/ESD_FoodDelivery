@@ -22,7 +22,7 @@ Node.js (version 14 or later)
 5) ```cd ESD_FoodDelivery```
 6) ```docker-compose up --build```
 
-After doing these two steps the application will be running locally.
+After doing these two steps the application will be running on http://localhost:5173/
 
 # Credentials
 
@@ -38,3 +38,14 @@ After doing these two steps the application will be running locally.
 
 - **Email:** `jewel@driver.com`  
 - **Password:** `123123`
+
+# Swagger Documentation
+
+**To run:**
+
+1)  ```cd to ESD_FoodDelivery folder```
+2)  ```cd swagger```
+3)  ```npm install express swagger-ui-express```
+4)  ```node swagger.js```
+
+After doing this you can view the swagger documentation on http://localhost:6008/api-docs/

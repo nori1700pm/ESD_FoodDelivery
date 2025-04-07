@@ -7,7 +7,7 @@
           <div class="logo-container">
             <img :src="logoImg" alt="nomnomGO logo" class="logo animate-bounce-slow" />
           </div>
-          <h1 class="title">nomnomGO!</h1>
+          <h1 class="title">NomNomGO!</h1>
           <p class="subtitle">Delicious food delivered to your doorstep</p>
           <div class="btn-container">
             <router-link to="/login" class="btn btn-primary">

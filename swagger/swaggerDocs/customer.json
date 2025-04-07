@@ -65,7 +65,7 @@
         }
       }
     },
-    "/customers/{customer_id}": {
+    "/customers/{customer_id}": { 
       "get": {
         "summary": "Get customer details",
         "description": "Fetches details of a specific customer by ID",
@@ -159,20 +159,6 @@
           },
           "500": {
             "description": "Failed to delete customer"
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "summary": "Health check",
-        "description": "Checks the health of the service",
-        "responses": {
-          "200": {
-            "description": "Service is healthy"
-          },
-          "500": {
-            "description": "Health check failed"
           }
         }
       }

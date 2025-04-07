@@ -9,20 +9,6 @@
   "basePath": "/",
   "schemes": ["http"],
   "paths": {
-    "/health": {
-      "get": {
-        "summary": "Health check",
-        "description": "Checks the health of the assign driver service",
-        "responses": {
-          "200": {
-            "description": "Service is healthy"
-          },
-          "500": {
-            "description": "Health check failed"
-          }
-        }
-      }
-    },
     "/assign/{order_id}": {
       "post": {
         "summary": "Assign a driver to an order",
@@ -58,40 +44,6 @@
           },
           "500": {
             "description": "Failed to assign driver"
-          }
-        }
-      }
-    },
-    "/cancel/{order_id}": {
-      "post": {
-        "summary": "Cancel an order after 15 minutes when no drivers have been assigned/started a delivery",
-        "description": "Cancels an order and processes a refund to the customer's wallet after 15 minutes when no drivers have been assigned/started a delivery",
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "description": "The ID of the order"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Order cancelled and refund processed",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "order_status": { "type": "object", "description": "Updated order status" },
-                "refund_status": { "type": "object", "description": "Refund details" },
-                "message": { "type": "string", "description": "Success message" }
-              }
-            }
-          },
-          "404": {
-            "description": "Order not found"
-          },
-          "500": {
-            "description": "Failed to cancel order"
           }
         }
       }

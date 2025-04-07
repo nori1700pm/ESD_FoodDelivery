@@ -102,24 +102,9 @@
     <div v-if="user" class="mt-4 text-sm text-gray-500">
       User ID: {{ user.uid }}
     </div>
-    
-    <!-- Debug section removed -->
   </div>
   
-  <div v-if="lastTransaction" 
-       :class="[
-         'mt-4 p-4 rounded-lg',
-         lastTransaction.status === 'success' 
-           ? 'bg-green-100 text-green-700' 
-           : 'bg-red-100 text-red-700'
-       ]">
-    <h4 class="font-bold">Last Transaction</h4>
-    <p>Type: {{ lastTransaction.type === 'credit' ? 'Add Money' : 'Payment' }}</p>
-    <p>Amount: ${{ lastTransaction.amount.toFixed(2) }}</p>
-    <p>Status: {{ lastTransaction.status }}</p>
-    <p v-if="lastTransaction.method">Method: {{ lastTransaction.method }}</p>
-    <p v-if="lastTransaction.error">Error: {{ lastTransaction.error }}</p>
-  </div>
+
 </template>
 
 <script setup>

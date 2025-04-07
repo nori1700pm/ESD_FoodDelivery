@@ -244,6 +244,21 @@ const fetchDriverInfo = async (email) => {
             DriverLocation: driver.DriverLocation,
             DriverEmail: driver.DriverEmail
         }
+        const storedCooldown = localStorage.getItem(getCooldownKey(driver.DriverId))
+        if (storedCooldown) {
+            const endTime = new Date(storedCooldown)
+            if (endTime > new Date()) {
+                // Still in cooldown period
+                cooldownEnd.value = endTime
+                startCooldownTimer()
+                // Force driver status to Busy if in cooldown
+                driverDetails.value.DriverStatus = 'Busy'
+            } else {
+                // Cooldown has expired, clean it up
+                localStorage.removeItem(getCooldownKey(driver.DriverId))
+            }
+        }
+
         console.log(driverDetails)
         await fetchAllOrders()
     } catch (error) {
@@ -550,7 +565,7 @@ const rejectDelivery = async () => {
             // Set cooldown to 5 minutes from now - THE BACKEND ALREADY HANDLES THIS
             // We just need the UI to show the cooldown
             cooldownEnd.value = new Date(Date.now() + 5 * 60 * 1000)
-            
+            localStorage.setItem(getCooldownKey(driverId.value), cooldownEnd.value.toISOString())
             // Start the cooldown timer for UI display only
             startCooldownTimer()
             
@@ -589,6 +604,9 @@ const startCooldownTimer = () => {
         if (!isInCooldown.value) {
             clearInterval(cooldownTimer.value)
             cooldownTimer.value = null
+            if (driverId.value) {
+                localStorage.removeItem(getCooldownKey(driverId.value))
+            }
             
             // Just refresh driver status from the backend
             // The backend has already set the driver to Available
@@ -654,37 +672,62 @@ const stopPolling = () => {
         pollInterval = null
     }
 }
+const cancelDelivery = async () => {
+    if (!activeOrder.value) return;
+
+    const confirmed = window.confirm(
+        'Are you sure you want to cancel this delivery? This action cannot be undone and the customer will be refunded.'
+    );
+    if (!confirmed) return;
+
+    try {
+        loading.value = true;
+        error.value = null;
+
+        console.log('Cancelling delivery for order:', activeOrder.value.orderId);
+
+        // Call the delivery-food composite service
+        const response = await axios.post(
+            `${DELIVERY_FOOD_SERVICE_URL}/deliver-food/cancel/${activeOrder.value.orderId}`
+        );
+
+        console.log('Cancel delivery response:', response.data);
+
+        if (response.data.code === 200) {
+            // Show success message
+            window.alert('Delivery cancelled successfully. Customer has been notified and refunded.');
+            // Refresh order data
+            await fetchAllOrders();
+        } else {
+            throw new Error(response.data.message || 'Failed to cancel delivery');
+        }
+
+    } catch (err) {
+        console.error('Error cancelling delivery:', err);
+        error.value = `Failed to cancel delivery: ${err.response?.data?.message || err.message}`;
+        window.alert(`Failed to cancel delivery: ${err.response?.data?.message || err.message}`);
+    } finally {
+        loading.value = false;
+    }
+};
+const getCooldownKey = (driverId) => `driverCooldownEnd_${driverId}`
 
 // Update onMounted to also fetch driver status on mount
 onMounted(() => {
-    // Check if there's a stored cooldown in localStorage
-    const storedCooldown = localStorage.getItem('driverCooldownEnd')
-    if (storedCooldown) {
-        const endTime = new Date(storedCooldown)
-        // Only set cooldown if it's in the future
-        if (endTime > new Date()) {
-            cooldownEnd.value = endTime
-            startCooldownTimer()
-        } else {
-            // Clear expired cooldown
-            localStorage.removeItem('driverCooldownEnd')
-        }
-    }
-    
-    // Ensure the fetch functions are called once the component is mounted
     if (user.value && user.value.email) {
         fetchDriverInfo(user.value.email)
     }
-    // Start polling for updates
     startPolling()
 })
 
 // Update watch for cooldownEnd to persist it
-watch(cooldownEnd, (newValue) => {
+watch([cooldownEnd, driverId], ([newValue, currentDriverId]) => {
+    if (!currentDriverId) return // Don't store if we don't have a driver ID
+    
     if (newValue) {
-        localStorage.setItem('driverCooldownEnd', newValue.toISOString())
+        localStorage.setItem(getCooldownKey(currentDriverId), newValue.toISOString())
     } else {
-        localStorage.removeItem('driverCooldownEnd')
+        localStorage.removeItem(getCooldownKey(currentDriverId))
     }
 })
 

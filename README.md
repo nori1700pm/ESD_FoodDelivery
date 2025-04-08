@@ -1,17 +1,13 @@
 # NomNomGo!
-GitHub Repository: 
-https://github.com/nori1700pm/ESD_FoodDelivery.git
-
-# Description
 NomNomGo! is a food delivery microservice application developed using Vue 3 and Vite framework, Docker, Python Flask, Firebase and Outsystems. This application consists of both a customer interface and a driver interface to handle scenarios from both perspectives.
 
 # Prerequisites
 Node.js (version 14 or later)
 
 # Running locally
-**Step 1: Clone the repository and run frontend**
+**Step 1: Extract the folder and run frontend**
 
-1)  ```git clone https://github.com/nori1700pm/ESD_FoodDelivery.git```
+1)  ```Unzip ESD_FoodDelivery.zip```
 2)  ```cd ESD_FoodDelivery```
 3)  ```cd frontend```
 4)  ```npm install```
@@ -50,3 +46,12 @@ After doing these two steps the application will be running on http://localhost:
 4)  ```node swagger.js```
 
 After doing this you can view the swagger documentation on http://localhost:6008/api-docs/
+
+# GitHub Repository
+> **Note:** If you would like to git clone and run the project
+>  You would still need to extract the submitted zip file and 
+>  place the two .env files at their respective locations to run the project  
+>  as the git repository cannot contain the .env files. 
+
+https://github.com/nori1700pm/ESD_FoodDelivery.git
+

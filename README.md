@@ -50,8 +50,7 @@ After doing this you can view the swagger documentation on http://localhost:6008
 # GitHub Repository
 > **Note:** If you would like to git clone and run the project
 >  You would still need to extract the submitted zip file and 
->  place the two .env files at their respective locations to run the project  
->  as the git repository cannot contain the .env files. 
+>  place the two .env files at their respective locations to run the project as the git repository cannot contain the .env files. 
 
 https://github.com/nori1700pm/ESD_FoodDelivery.git
 
